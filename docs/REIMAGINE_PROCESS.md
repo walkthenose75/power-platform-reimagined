@@ -167,8 +167,9 @@ largely hands-off; 8 is ongoing. Total hands-on decision time: ~15–20 minutes.
   data, deploy to tenant, synthetic data, gotcha capture.
 - **Built:** the Phase 1 **intake wizard** (`npm run intake`) — a local browser stepper that runs
   preflight and writes a validated `intake.json` + `KICKOFF.md`.
-- **Being assembled:** the Phase 7 publish automation (solution export + GitHub package +
-  Solution Hub bundle + sanitization scan — export + scan already proven on the pilot).
+- **Proven (Phase 7 publish):** solution export + repo packaging (`package-repo.ps1`) +
+  sanitization scan + `gh repo create --public --push`. The pilot published two public repos —
+  the reusable kit and the Virtual Rounding demo.
 
 ## Related
 
