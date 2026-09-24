@@ -3,6 +3,29 @@
 Captured while running the Virtual Rounding pilot. These generalize to any SE reimagining a
 Power Platform solution and should feed the `reimagine-power-platform` skill and docs.
 
+## Discovery depth — UNPACK the real packages, not just the docs (CRITICAL)
+
+The single biggest miss on the pilot: I first reconstructed behavior from **README/docs + setup
+scripts + schema only**, and the reimagined app came out as a faithful data model and UI **shell
+that didn't actually do anything**. Fix: **download, unpack, and analyze the actual artifacts.**
+
+- **Canvas apps:** the repo's `*.zip` app exports contain a `.msapp` (and often **embedded
+  flows**). Unpack the app to Power Fx and read the screens' `OnSelect`/`Patch`/`.Run(...)`:
+  ```
+  Expand-Archive App_export.zip -DestinationPath out
+  pac canvas unpack --msapp out\...\*.msapp --sources out\src   # Power Fx YAML
+  ```
+- **Flows:** read each `definition.json` (embedded in the app package and/or standalone flow
+  zips). Capture triggers, connector actions, Graph/HTTP calls, and the exact field writes.
+- **Reconstruct behavior from evidence**, then map every real action to the target. On the pilot
+  the real actions were: browse by location, **set/clear patient name** (`Patch`), **Join**
+  (`Launch(MeetingLink)`), **Invite family** (`ShareMeetingLink.Run` → email + `SharedWith+1` +
+  `LastShare`), **Reset** (`ResetMeetingLink.Run` → Graph creates a new Teams meeting + clear
+  patient + `SharedWith=0` + `LastReset`). See `workspaces/<pilot>/generated/current-state/behavior.md`.
+- **Parity check before "done":** every source user action must have a working target
+  equivalent (real data writes with visible UI changes), or be explicitly listed as a follow-up
+  (e.g., real invite email via Office 365 connector; real Graph meeting via a flow).
+
 ## Intake
 
 - A **GitHub repository source** works well and gives strong *static* evidence (data schema
@@ -108,6 +131,14 @@ Implication for the deliverable model:
   artifacts are in the named unmanaged solution**; the app is reproducibly deployed from source.
 - Re-check periodically — code app + solution ALM is evolving in preview; a future release may
   package the app as a solution component.
+
+> **Correction (morning after pilot):** `pac code push --solutionName` did **not** auto-associate
+> the code app in this preview, but the code app **can be added to the unmanaged solution
+> manually** via the maker portal (**Solutions > select solution > Add existing > App > the code
+> app**). On the pilot the user added it by hand. So the deliverable *can* contain both schema and
+> app in one solution — the gap is only that `--solutionName` didn't do it automatically. Kit
+> action: after push, verify solution membership and, if missing, add the app (portal today;
+> watch for a CLI fix).
 
 ## Transient errors to retry (not real failures)
 

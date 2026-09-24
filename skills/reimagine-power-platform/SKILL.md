@@ -77,6 +77,13 @@ Stop at the discovery gate with coverage, evidence quality, and blockers.
 
 Generate current-state inventories, architecture, lineage, permissions, connections, user journeys, business rules, formulas, automation branches, agent behavior, integrations, and failure paths.
 
+**Unpack the real artifacts — do not rely on docs alone.** For each canvas app, expand its export
+`.zip`, then `pac canvas unpack --msapp <file> --sources <dir>` and read the screens'
+`OnSelect`/`Patch`/`.Run(...)` logic. For each flow (embedded in the app package and standalone
+zips), read `definition.json` for triggers, connector actions, Graph/HTTP calls, and exact field
+writes. Record the concrete user actions and their data effects in a behavior document. A UI that
+looks right but performs no real actions is an incomplete reimagining.
+
 Mark claims observed, inferred, owner-confirmed, or unknown. Ask the owner to confirm material inferences before target design.
 
 ### 5. Ideate and select features

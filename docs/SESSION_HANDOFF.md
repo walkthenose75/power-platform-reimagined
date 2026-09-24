@@ -57,8 +57,9 @@ ongoing backlog/roadmap.
    unique + friendly display; keep "reimagine" branding out of the deliverable.
 5. **Build everything in the solution.** All Dataverse artifacts go in a named unmanaged
    solution created up front.
-6. **Code apps are NOT in the classic solution export** (0 `canvasapps`; export had only the 3
-   tables). Deliverable = **schema solution + app source + `pac code push`**; install is 3 steps.
+6. **Code apps are NOT auto-added to the classic solution export** (0 `canvasapps`; `--solutionName`
+   on push didn't associate it). **But** the code app **can be added to the solution manually via
+   the maker portal** (Add existing > App) — the user did this. Verify solution membership after push.
 7. **Teams framing needs a CSP change** — add `https://teams.microsoft.com` +
    `https://*.teams.microsoft.com` to the App CSP `frame-ancestors`, or the tab renders blank.
 8. **Transient errors → retry:** `pac code push` DNS blips (`ENOTFOUND`/`ENOENT` to
