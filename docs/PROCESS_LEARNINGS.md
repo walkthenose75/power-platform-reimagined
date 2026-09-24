@@ -153,6 +153,25 @@ The pilot hit several transient errors where the correct response is **retry**, 
 - **First `pac code push` after enabling code apps → `403 CodeAppOperationNotAllowedInEnvironment`**:
   enablement propagation delay (minutes), not a permanent block. Retry until it clears.
 
+## Connectors in code apps (Office 365 example)
+
+- **Delegated (OAuth) connections must be created interactively** in the maker portal — they
+  can't be created headlessly (`pac connection create` only makes **service-principal**
+  connections). The agent can do everything else; the user does the ~20-second sign-in.
+- Add a connector to a code app: `pac code add-data-source --apiId shared_office365
+  --connectionId <id>`. It generates a typed service (`Office365OutlookService.ts`) and adds a
+  `connectionReferences` entry to `power.config.json` (portable — connector id only, no secret).
+- Call it from JS: `Office365OutlookService.SendEmailV2({ To, Subject, Body, Importance })`.
+  Results are `IOperationResult` (`success`, `data`, `error`) — check `success`.
+- **Make it solution-aware:** create a `connectionreference` record with header
+  `MSCRM.SolutionUniqueName=<solution>` (logical name needs the publisher prefix, e.g.
+  `sh_office365outlook`). It appears as solution component **type 10163**.
+- **Gotcha:** the Office 365 Outlook connector's generated **calendar** client does **not**
+  expose an online-meeting **join URL**, so it can't create a usable Teams meeting. For a real
+  Teams meeting link, use the Microsoft Teams connector or the **Graph app-auth pattern in a
+  cloud flow** (`POST /communications/onlinemeetings`) — which is exactly what the original
+  solution did (secret kept server-side in the flow, never in the client app).
+
 ## Kit backlog (improvements identified)
 
 - **PREFLIGHT: verify code apps are ENABLED in the target environment before scaffolding.**
