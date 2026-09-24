@@ -28,12 +28,24 @@ Run an evidence-backed, gated workflow from source intake through an installable
 - Evaluate model-driven apps case by case.
 - Do not retrieve or persist source business rows. Use schema and approved non-identifying aggregates only.
 - Build and publish unmanaged solutions.
+- **Everything the kit builds goes into ONE named unmanaged solution.** Create the solution FIRST
+  (`scripts/ensure-solution.ps1`), then create every component inside it — tables, the code app,
+  cloud flows, connectors (as **connection references**), choices, and environment variables.
+  Nothing may be left in the Default solution. After building, prove it with
+  `scripts/audit-solution.ps1`; the app and connection references are the ones most often forgotten.
 - A live demo is optional; clean installation and customization are required.
 - Local read-only work may proceed on autopilot. Stop for the approval gates in this workflow.
 
 ## Workflow
 
 ### 1. Kick off intake
+
+Before building anything in a tenant, run the **Phase 2 preflight** to confirm readiness (tools,
+auth to the target env, maker role, code-apps feature):
+
+```powershell
+./scripts/preflight.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com
+```
 
 If a workspace does not exist, run one of:
 
@@ -115,13 +127,19 @@ Generate reviewable CSV files, a manifest conforming to `schemas/synthetic-data-
 
 ### 8. Build after mutation approval
 
-After explicit authorization, route implementation to workload specialists:
+Build **solution-first** and keep **everything** in the one named unmanaged solution.
 
-- custom experiences become code apps;
-- approved model-driven experiences remain model-driven;
-- build Dataverse, flows, agents, integrations, security, and configuration;
-- use supported connection references and environment variables;
-- export unpacked source and an unmanaged solution package.
+1. **Create the container first:** `scripts/ensure-solution.ps1` (publisher + unmanaged solution).
+2. **Tables/choices:** create with the `MSCRM.SolutionUniqueName=<solution>` header so they land in it.
+3. **Experiences:** implement custom experiences as **code apps** (never target canvas apps);
+   retain or redesign approved model-driven experiences.
+4. **Deploy + add the app:** `pac code push --solutionName <solution>`, then
+   `scripts/add-app-to-solution.ps1` — push does **not** reliably add the app itself.
+5. **Connectors/flows/config:** add connectors as **connection references** in the solution;
+   create flows and environment variables in the solution.
+6. **Verify:** run `scripts/audit-solution.ps1 -Prefix <prefix>`. Every table, the app, flows, and
+   connection references must appear, and the gap scan must be clean. Fix any gap before continuing.
+7. **Export:** unpacked source and the unmanaged solution package.
 
 Do not create target canvas apps.
 
@@ -174,6 +192,7 @@ At every gate, report:
 |---|---|
 | [Architecture](../../docs/ARCHITECTURE.md) | Designing adapters, trust boundaries, or extensions |
 | [Operator workflow](../../docs/OPERATOR_WORKFLOW.md) | Executing or recovering a full pilot |
+| [Environment scripts](../../scripts/README.md) | Preflight, solution-first creation, add-app-to-solution, and the everything-in-solution audit |
 | [Solution model schema](../../schemas/solution-model.schema.json) | Producing or validating canonical evidence |
 | [Synthetic data schema](../../schemas/synthetic-data-manifest.schema.json) | Designing publication data |
 

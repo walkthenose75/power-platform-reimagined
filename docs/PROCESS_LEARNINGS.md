@@ -137,8 +137,13 @@ Implication for the deliverable model:
 > manually** via the maker portal (**Solutions > select solution > Add existing > App > the code
 > app**). On the pilot the user added it by hand. So the deliverable *can* contain both schema and
 > app in one solution — the gap is only that `--solutionName` didn't do it automatically. Kit
-> action: after push, verify solution membership and, if missing, add the app (portal today;
-> watch for a CLI fix).
+> action: after push, verify solution membership and, if missing, add the app.
+>
+> **Automation (now solved):** a code app has **no `canvasapps` record until it's known to a
+> solution**; once added, it appears as `canvasapps` (publisher-prefixed name) and solution
+> component **type 300**. The kit adds it via `AddSolutionComponent` (ComponentType=300,
+> ComponentId=appId) in `scripts/add-app-to-solution.ps1`, and `scripts/audit-solution.ps1`
+> verifies membership + flags any component built but not added.
 
 ## Transient errors to retry (not real failures)
 

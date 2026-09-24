@@ -80,6 +80,7 @@ npm run reimagine -- scan --path workspaces/fabrikam-care/publication
 | Path | Purpose |
 |---|---|
 | `skills/reimagine-power-platform/` | Guided VS Code/Copilot workflow |
+| `scripts/` | Env-aware PowerShell: preflight, solution-first creation, add-app-to-solution, everything-in-solution audit |
 | `schemas/` | Versioned artifact contracts |
 | `src/` | Deterministic CLI utilities |
 | `tests/` | Validation and sanitization tests |
