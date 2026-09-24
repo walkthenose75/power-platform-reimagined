@@ -9,6 +9,7 @@ Prereqs: `pac` + `az` installed; `az login --tenant <target-tenant>`; System Cus
 | Script | Purpose | When |
 |---|---|---|
 | `preflight.ps1` | Phase 2 readiness: tools, `pac`/`az` auth to the target env, Dataverse reachability, maker role, code-apps feature note. | Before building |
+| `analyze-artifacts.ps1` | **Discovery adapter:** unpack canvas `.msapp` (Power Fx) + flow `definition.json` from a source solution/repo and summarize real behavior into `behavior-evidence.md`. | During discovery (Phase 3) |
 | `ensure-solution.ps1` | **Solution-first:** create the publisher + unmanaged solution. | First mutation step |
 | `add-app-to-solution.ps1` | Add a deployed **code app** to the solution (push doesn't reliably do it). | Right after `pac code push` |
 | `audit-solution.ps1` | **Everything-in-solution audit:** list components (tables, app, flows, connection references) + gap-scan custom tables not in the solution. | After building, before publish |

@@ -25,6 +25,9 @@ that didn't actually do anything**. Fix: **download, unpack, and analyze the act
 - **Parity check before "done":** every source user action must have a working target
   equivalent (real data writes with visible UI changes), or be explicitly listed as a follow-up
   (e.g., real invite email via Office 365 connector; real Graph meeting via a flow).
+- **Now automated:** `scripts/analyze-artifacts.ps1` performs this extraction (unpacks every
+  `.msapp` to Power Fx, summarizes every flow `definition.json` incl. embedded ones) and writes
+  `behavior-evidence.md`. Validated on the pilot: 2 canvas apps + 5 flow definitions extracted.
 
 ## Intake
 
