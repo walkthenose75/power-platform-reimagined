@@ -26,6 +26,9 @@ Existing canvas apps are documented as source artifacts only. Custom target expe
 
 ## Current status
 
+> **Resuming?** Start with [docs/SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md) — it has the live
+> repo/tenant state, learnings, and next steps.
+
 The repository currently provides the reusable foundation:
 
 - canonical solution-model and synthetic-data schemas;
@@ -85,6 +88,7 @@ npm run reimagine -- scan --path workspaces/fabrikam-care/publication
 | `docs/PREREQUISITES.md` | Tooling, extensions, accounts, and licensing to set up first |
 | `docs/CODE_APP_BUILD_RUNBOOK.md` | Concrete PAC-CLI code-app build sequence and preflights |
 | `docs/PROCESS_LEARNINGS.md` | Reusable gotchas and adaptations captured during pilots |
+| `docs/SESSION_HANDOFF.md` | Latest session state, learnings, and next steps (read when resuming) |
 | `docs/INTAKE_APP_DESIGN.md` | Design for the guided local intake app |
 | `workspaces/` | Local pilot evidence and generated artifacts; ignored by Git |
 
