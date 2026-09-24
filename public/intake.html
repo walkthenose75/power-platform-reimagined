@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reimagine — Intake Wizard</title>
+<style>
+  :root{
+    --teal:#0f766e; --cyan:#0891b2; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --bg:#f4f6f9; --card:#ffffff; --ok:#16a34a; --bad:#dc2626; --warn:#d97706;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:900px;margin:0 auto;padding:24px}
+  header.top{background:linear-gradient(135deg,var(--teal),var(--cyan));color:#fff;border-radius:14px;padding:22px 26px;box-shadow:0 6px 20px rgba(8,145,178,.25)}
+  header.top h1{margin:0 0 4px;font-size:22px}
+  header.top p{margin:0;opacity:.9;font-size:14px}
+  .steps{display:flex;gap:8px;margin:18px 0}
+  .steps .dot{flex:1;height:6px;border-radius:999px;background:var(--line)}
+  .steps .dot.active{background:var(--cyan)}
+  .steps .dot.done{background:var(--teal)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+  .card h2{margin:0 0 4px;font-size:18px}
+  .card .sub{margin:0 0 18px;color:var(--muted);font-size:14px}
+  label{display:block;font-weight:600;font-size:13px;margin:14px 0 6px}
+  input[type=text],input[type=url],textarea,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;color:var(--ink);background:#fff}
+  textarea{min-height:78px;resize:vertical}
+  .hint{color:var(--muted);font-size:12px;margin-top:4px}
+  .modes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:6px}
+  .mode{border:2px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;transition:.15s}
+  .mode:hover{border-color:var(--cyan)}
+  .mode.sel{border-color:var(--teal);background:#f0fdfa}
+  .mode b{display:block;font-size:15px}
+  .mode span{color:var(--muted);font-size:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;user-select:none}
+  .chip.sel{background:#cffafe;border-color:var(--cyan);color:#155e75;font-weight:600}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .toggle{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .nav{display:flex;justify-content:space-between;margin-top:20px}
+  button{font:inherit;font-weight:600;border-radius:9px;padding:10px 18px;cursor:pointer;border:1px solid var(--line);background:#f8fafc}
+  button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+  button.primary:hover{background:#0e7490;border-color:#0e7490}
+  button:disabled{opacity:.5;cursor:default}
+  .hidden{display:none}
+  .checks{list-style:none;padding:0;margin:10px 0}
+  .checks li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+  .badge.ok{background:#dcfce7;color:#166534}
+  .badge.bad{background:#fee2e2;color:#991b1b}
+  .badge.opt{background:#fef3c7;color:#92400e}
+  pre{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:10px;overflow:auto;font-size:13px}
+  .done-box{border:1px solid var(--teal);background:#f0fdfa;border-radius:12px;padding:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Reimagine a Power Platform solution</h1>
+    <p>Answer once. The kit turns your answers into a validated brief and drives the rest.</p>
+  </header>
+
+  <div class="steps" id="steps"></div>
+
+  <!-- Step 1: Start -->
+  <section class="card step" data-step="0">
+    <h2>1 · What are you reimagining?</h2>
+    <p class="sub">Pick how you're starting, and give it a name.</p>
+    <div class="modes" id="modes">
+      <div class="mode" data-mode="repository"><b>GitHub repo</b><span>Clone &amp; reimagine an existing repo</span></div>
+      <div class="mode" data-mode="solution-zip"><b>Solution .zip</b><span>A downloaded solution export</span></div>
+      <div class="mode" data-mode="tenant"><b>Tenant solution</b><span>Installed in a Power Platform env</span></div>
+      <div class="mode" data-mode="new-concept"><b>New concept</b><span>A brand-new idea, no source</span></div>
+    </div>
+    <label for="pilotName">Solution name</label>
+    <input id="pilotName" type="text" placeholder="e.g. Virtual Rounding" />
+  </section>
+
+  <!-- Step 2: Source -->
+  <section class="card step hidden" data-step="1">
+    <h2>2 · Source</h2>
+    <p class="sub" id="sourceSub">Where the current solution lives.</p>
+    <div id="src-repository" class="src hidden">
+      <label>Repository URL</label>
+      <input id="repository" type="url" placeholder="https://github.com/org/repo" />
+      <label>Branch or tag</label>
+      <input id="revision" type="text" placeholder="main" />
+    </div>
+    <div id="src-solution-zip" class="src hidden">
+      <label>Path to solution .zip</label>
+      <input id="zipPath" type="text" placeholder="C:\\path\\Solution.zip" />
+    </div>
+    <div id="src-tenant" class="src hidden">
+      <label>Environment URL</label>
+      <input id="srcEnvUrl" type="url" placeholder="https://org.crm.dynamics.com/" />
+      <label>Solution name (in the tenant)</label>
+      <input id="solutionName" type="text" placeholder="Unmanaged solution name" />
+    </div>
+    <div id="src-new-concept" class="src hidden">
+      <p class="hint">No source — you'll describe the concept in the next step.</p>
+    </div>
+    <div id="boundaryWrap" class="hidden">
+      <label>Dependency boundary</label>
+      <select id="dependencyBoundary">
+        <option value="full-closure">Full closure (solution + referenced dependencies) — recommended</option>
+        <option value="referenced-only">Solution + directly referenced only</option>
+        <option value="solution-owned">Solution-owned components only</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Step 3: Target -->
+  <section class="card step hidden" data-step="2">
+    <h2>3 · Target</h2>
+    <p class="sub">Where and how it gets rebuilt. Custom experiences are built as code apps.</p>
+    <label>Target environment URL</label>
+    <input id="target-env" type="url" placeholder="https://org.crm.dynamics.com/" />
+    <label>Sign-in account (tenant to build in)</label>
+    <input id="signInAccount" type="text" placeholder="you@tenant.onmicrosoft.com" />
+    <div class="toggle"><input type="checkbox" id="teamsPackaging" checked /><label for="teamsPackaging" style="margin:0">Package as a Microsoft Teams personal tab</label></div>
+    <label>Existing model-driven apps</label>
+    <select id="modelDrivenPolicy">
+      <option value="case-by-case">Retain where they fit; code apps for custom — recommended</option>
+      <option value="replace">Replace with code apps</option>
+    </select>
+  </section>
+
+  <!-- Step 4: Details -->
+  <section class="card step hidden" data-step="3">
+    <h2>4 · Details</h2>
+    <p class="sub" id="detailsSub">A little context sharpens the reimagination.</p>
+    <div id="details-existing">
+      <label>Known pain points</label>
+      <textarea id="painPoints" placeholder="What's dated or painful about the current solution?"></textarea>
+      <label>Keep / change / drop</label>
+      <textarea id="keepChangeDrop" placeholder="What must stay, what should change, what can go?"></textarea>
+      <label>Feature ideas to consider</label>
+      <textarea id="featureIdeas" placeholder="New capabilities you'd like the kit to evaluate."></textarea>
+    </div>
+    <div id="details-concept" class="hidden">
+      <label>Problem &amp; business value</label>
+      <textarea id="c-problem"></textarea>
+      <div class="row"><div><label>Target users</label><input id="c-users" type="text" /></div><div><label>Key capabilities</label><input id="c-capabilities" type="text" /></div></div>
+      <label>Data the app manages</label>
+      <textarea id="c-data" placeholder="Entities and relationships in plain language."></textarea>
+      <div class="row"><div><label>Integrations</label><input id="c-integrations" type="text" placeholder="email, Teams, FHIR…" /></div><div><label>Success criteria</label><input id="c-success" type="text" /></div></div>
+    </div>
+    <div class="row">
+      <div><label>Synthetic data realism</label>
+        <select id="realism"><option value="demo">Demo realism — coherent story (recommended)</option><option value="coverage">Structural coverage</option><option value="both">Both</option></select>
+      </div>
+      <div><label>Synthetic data volume</label>
+        <select id="volume"><option value="small">Small (polished)</option><option value="medium">Medium</option><option value="large">Large</option></select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 5: Publish -->
+  <section class="card step hidden" data-step="4">
+    <h2>5 · Publish</h2>
+    <p class="sub">Where it goes when it's ready. All optional now — you can fill later.</p>
+    <label>GitHub repository URL</label>
+    <input id="githubRepoUrl" type="url" placeholder="https://github.com/org/repo" />
+    <label>Solution Hub title</label>
+    <input id="sh-title" type="text" placeholder="e.g. Virtual Rounding" />
+    <label>Industry</label>
+    <div class="chips" id="industry" data-single="1">
+      <div class="chip" data-v="Payers">Payers</div><div class="chip" data-v="Providers">Providers</div>
+      <div class="chip" data-v="Pharma">Pharma</div><div class="chip" data-v="Medtech">Medtech</div>
+    </div>
+    <label>Content type</label>
+    <div class="chips" id="contentTypes">
+      <div class="chip" data-v="Demo Assets">Demo Assets</div><div class="chip" data-v="Lab Content">Lab Content</div>
+      <div class="chip" data-v="Business Specific">Business Specific</div><div class="chip" data-v="Security">Security</div>
+      <div class="chip" data-v="Architecture Pattern">Architecture Pattern</div><div class="chip" data-v="Workshop">Workshop</div>
+      <div class="chip" data-v="Hackathon">Hackathon</div>
+    </div>
+    <label>Technical areas</label>
+    <div class="chips" id="technicalAreas">
+      <div class="chip" data-v="Power Platform">Power Platform</div><div class="chip" data-v="Dataverse">Dataverse</div>
+      <div class="chip" data-v="Microsoft Teams">Microsoft Teams</div><div class="chip" data-v="Copilot">Copilot</div>
+      <div class="chip" data-v="AI Agents">AI Agents</div><div class="chip" data-v="FHIR / Health Data Services">FHIR / Health Data Services</div>
+      <div class="chip" data-v="Power BI">Power BI</div><div class="chip" data-v="Microsoft Fabric">Microsoft Fabric</div>
+      <div class="chip" data-v="Dynamics 365">Dynamics 365</div>
+    </div>
+    <label>Contributors</label>
+    <input id="contributors" type="text" placeholder="Co-authors (comma separated)" />
+    <label>Narrative (optional — the kit can draft this)</label>
+    <textarea id="narrative"></textarea>
+  </section>
+
+  <!-- Step 6: Review -->
+  <section class="card step hidden" data-step="5">
+    <h2>6 · Readiness &amp; submit</h2>
+    <p class="sub">Preflight checks your machine; submit writes the brief.</p>
+    <button id="runPreflight" type="button">Run preflight checks</button>
+    <ul class="checks" id="checks"></ul>
+    <div id="result"></div>
+  </section>
+
+  <div class="nav">
+    <button id="back" type="button">Back</button>
+    <button id="next" class="primary" type="button">Next</button>
+  </div>
+</div>
+
+<script>
+const TOTAL = 6;
+let step = 0;
+let mode = null;
+
+const stepsEl = document.getElementById('steps');
+for (let i=0;i<TOTAL;i++){const d=document.createElement('div');d.className='dot';stepsEl.appendChild(d);}
+
+function renderSteps(){
+  [...stepsEl.children].forEach((d,i)=>{d.className='dot'+(i<step?' done':i===step?' active':'');});
+}
+function show(){
+  document.querySelectorAll('.step').forEach(s=>s.classList.toggle('hidden', Number(s.dataset.step)!==step));
+  document.getElementById('back').disabled = step===0;
+  document.getElementById('next').textContent = step===TOTAL-1 ? 'Submit' : 'Next';
+  renderSteps();
+  if(step===5) refreshSummary();
+}
+
+// entry mode selection
+document.querySelectorAll('.mode').forEach(m=>{
+  m.addEventListener('click',()=>{
+    document.querySelectorAll('.mode').forEach(x=>x.classList.remove('sel'));
+    m.classList.add('sel'); mode=m.dataset.mode;
+  });
+});
+
+// chips
+function chipGroup(id){
+  const el=document.getElementById(id); const single=el.dataset.single==='1';
+  el.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+    if(single){el.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');}
+    else c.classList.toggle('sel');
+  }));
+}
+['industry','contentTypes','technicalAreas'].forEach(chipGroup);
+function chipValues(id){return [...document.getElementById(id).querySelectorAll('.chip.sel')].map(c=>c.dataset.v);}
+
+function applyMode(){
+  document.querySelectorAll('.src').forEach(s=>s.classList.add('hidden'));
+  const el=document.getElementById('src-'+mode); if(el) el.classList.remove('hidden');
+  document.getElementById('boundaryWrap').classList.toggle('hidden', mode==='new-concept');
+  document.getElementById('details-existing').classList.toggle('hidden', mode==='new-concept');
+  document.getElementById('details-concept').classList.toggle('hidden', mode!=='new-concept');
+  document.getElementById('sourceSub').textContent = mode==='new-concept' ? 'No source for a new concept.' : 'Where the current solution lives.';
+}
+
+function val(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+function checked(id){return document.getElementById(id).checked;}
+
+function buildPayload(){
+  const p={ schemaVersion:'1.0.0', pilotName:val('pilotName'), entryMode:mode,
+    target:{ surface:'code-app', environmentUrl:val('target-env'), signInAccount:val('signInAccount'),
+      teamsPackaging:checked('teamsPackaging'), modelDrivenPolicy:val('modelDrivenPolicy') },
+    synthetic:{ realism:val('realism'), volume:val('volume') },
+    publish:{ githubRepoUrl:val('githubRepoUrl'),
+      solutionHub:{ title:val('sh-title'), industry:(chipValues('industry')[0]||''),
+        contentTypes:chipValues('contentTypes'), technicalAreas:chipValues('technicalAreas'),
+        contributors:val('contributors'), narrative:val('narrative') } },
+    additional:{} };
+  if(mode==='repository') p.source={ repository:val('repository'), revision:val('revision')||'main' };
+  else if(mode==='solution-zip') p.source={ zipPath:val('zipPath') };
+  else if(mode==='tenant') p.source={ environmentUrl:val('srcEnvUrl'), solutionName:val('solutionName') };
+  if(mode!=='new-concept' && p.source){ p.source.dependencyBoundary=val('dependencyBoundary'); }
+  if(mode==='new-concept') p.concept={ problem:val('c-problem'), users:val('c-users'), capabilities:val('c-capabilities'), data:val('c-data'), integrations:val('c-integrations'), successCriteria:val('c-success') };
+  else p.reimagine={ painPoints:val('painPoints'), keepChangeDrop:val('keepChangeDrop'), featureIdeas:val('featureIdeas') };
+  return p;
+}
+
+function refreshSummary(){}
+
+document.getElementById('runPreflight').addEventListener('click', async ()=>{
+  const ul=document.getElementById('checks'); ul.innerHTML='<li>Running…</li>';
+  const r=await fetch('/preflight'); const {checks}=await r.json();
+  ul.innerHTML='';
+  checks.forEach(c=>{
+    const li=document.createElement('li');
+    const cls=c.ok?'ok':(c.required?'bad':'opt');
+    const txt=c.ok?'OK':(c.required?'MISSING':'OPTIONAL');
+    li.innerHTML=`<span class="badge ${cls}">${txt}</span> <b>${c.name}</b> <span style="color:var(--muted)">— ${c.detail}</span>`;
+    ul.appendChild(li);
+  });
+});
+
+async function submit(){
+  const payload=buildPayload();
+  const res=document.getElementById('result');
+  const r=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const data=await r.json();
+  if(!data.ok){ res.innerHTML=`<p style="color:var(--bad)"><b>Couldn't save:</b></p><pre>${(data.errors||[]).join('\n')}</pre>`; return; }
+  const cmd=data.nextCommand?`<p>Then run:</p><pre>${data.nextCommand}</pre>`:`<p>New concept — no ingestion needed. Ask Copilot to start from <code>intake.json</code>.</p>`;
+  res.innerHTML=`<div class="done-box"><h3 style="margin:0 0 8px">Saved ✓</h3><p>Brief written to <code>${data.workspace}/intake.json</code> and <code>KICKOFF.md</code>.</p>${cmd}<p>Open <b>${data.workspace}/KICKOFF.md</b> in Copilot and say: <b>Reimagine this Power Platform solution.</b></p></div>`;
+}
+
+function validateStep(){
+  if(step===0){ if(!mode){alert('Pick how you are starting.');return false;} if(!val('pilotName')){alert('Give it a name.');return false;} }
+  if(step===1){
+    if(mode==='repository' && !val('repository')){alert('Repository URL is required.');return false;}
+    if(mode==='solution-zip' && !val('zipPath')){alert('Path to the .zip is required.');return false;}
+    if(mode==='tenant' && !val('solutionName')){alert('Solution name is required.');return false;}
+  }
+  return true;
+}
+
+document.getElementById('next').addEventListener('click', async ()=>{
+  if(!validateStep()) return;
+  if(step===0) applyMode();
+  if(step===TOTAL-1){ await submit(); return; }
+  step++; show();
+});
+document.getElementById('back').addEventListener('click', ()=>{ if(step>0){step--;show();} });
+
+show();
+</script>
+</body>
+</html>

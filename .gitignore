@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+.vscode/
+
+# Source evidence and generated working artifacts are local by default.
+workspaces/
+!workspaces/.gitkeep
+
+# Keep distributable examples fictitious and reviewed.
+artifacts/private/
+inbox/*.zip

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/power-platform-reimagined/intake/1-0-0",
+  "title": "Reimagine Intake",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "pilotName", "entryMode", "target"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "pilotName": { "type": "string", "minLength": 1 },
+    "entryMode": { "enum": ["new-concept", "repository", "solution-zip", "tenant"] },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string" },
+        "revision": { "type": "string" },
+        "zipPath": { "type": "string" },
+        "environmentUrl": { "type": "string" },
+        "solutionName": { "type": "string" },
+        "dependencyBoundary": { "enum": ["full-closure", "referenced-only", "solution-owned"] }
+      }
+    },
+    "concept": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "problem": { "type": "string" },
+        "users": { "type": "string" },
+        "capabilities": { "type": "string" },
+        "data": { "type": "string" },
+        "integrations": { "type": "string" },
+        "successCriteria": { "type": "string" }
+      }
+    },
+    "reimagine": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "painPoints": { "type": "string" },
+        "keepChangeDrop": { "type": "string" },
+        "featureIdeas": { "type": "string" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface"],
+      "properties": {
+        "surface": { "const": "code-app" },
+        "environmentUrl": { "type": "string" },
+        "signInAccount": { "type": "string" },
+        "teamsPackaging": { "type": "boolean" },
+        "modelDrivenPolicy": { "enum": ["case-by-case", "replace"] }
+      }
+    },
+    "synthetic": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "realism": { "enum": ["demo", "coverage", "both"] },
+        "volume": { "enum": ["small", "medium", "large"] }
+      }
+    },
+    "publish": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "githubRepoUrl": { "type": "string" },
+        "liveDemoUrl": { "type": "string" },
+        "solutionHub": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": { "type": "string" },
+            "industry": { "enum": ["Payers", "Providers", "Pharma", "Medtech", ""] },
+            "contentTypes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "technicalAreas": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "contributors": { "type": "string" },
+            "narrative": { "type": "string" }
+          }
+        }
+      }
+    },
+    "additional": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "notes": { "type": "string" },
+        "links": { "type": "string" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "entryMode": { "const": "repository" } } },
+      "then": { "properties": { "source": { "required": ["repository"] } }, "required": ["source"] }
+    },
+    {
+      "if": { "properties": { "entryMode": { "const": "solution-zip" } } },
+      "then": { "properties": { "source": { "required": ["zipPath"] } }, "required": ["source"] }
+    },
+    {
+      "if": { "properties": { "entryMode": { "const": "tenant" } } },
+      "then": { "properties": { "source": { "required": ["solutionName"] } }, "required": ["source"] }
+    }
+  ]
+}

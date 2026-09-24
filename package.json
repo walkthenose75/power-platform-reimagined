@@ -1,0 +1,26 @@
+{
+  "name": "power-platform-reimagined",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Evidence-backed toolkit for documenting and reimagining Power Platform solutions.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "check": "npm run build && npm test",
+    "reimagine": "tsx src/cli.ts",
+    "intake": "tsx src/intake-server.ts"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
