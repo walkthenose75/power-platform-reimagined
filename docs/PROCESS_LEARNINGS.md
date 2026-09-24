@@ -195,3 +195,19 @@ The pilot hit several transient errors where the correct response is **retry**, 
 - Add a **solution-container preflight**: create publisher + unmanaged solution up front and
   create every table/app inside it (requirement: reimagined solution must live in a named
   unmanaged solution, not Default).
+
+### Intake wizard UX (from user feedback)
+
+- **Step 2 Source — `.zip` browse button.** Replace the free-text "Path to solution .zip" with a
+  **file browse button**. On Next, **copy the chosen `.zip` into the current VS Code working
+  directory** (e.g. `inbox/`) and **unzip it**, then proceed. (Browsers can't move arbitrary local
+  files by path, so the wizard server must receive the uploaded file and write it, or use a VS Code
+  file-picker integration.)
+- **Step 2 — explain "Dependency boundary."** The options are unclear. Add plain-language help
+  text under each choice:
+  - *Full closure (recommended)* — the solution **plus everything it depends on** (SharePoint
+    lists, connections, child flows, custom connectors, external APIs, adjacent assets).
+  - *Directly referenced only* — the solution **plus only what its components reference directly**
+    (one hop); skips deeper/indirect dependencies.
+  - *Solution-owned only* — **only the components packaged inside the solution**; fastest, misses
+    external dependencies.

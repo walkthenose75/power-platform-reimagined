@@ -92,3 +92,13 @@ Built (v1). Serves at `npm run intake`; writes a validated `intake.json` + `KICK
 pilot, runs machine preflight, and supports all four entry modes. Validated against the Virtual
 Rounding pilot. Future: pre-fill from an existing repo, and richer preflight (env code-apps
 enablement check once auth is present).
+
+## Backlog (v2, from user feedback)
+
+- **`.zip` browse button (Step 2 Source):** replace the free-text path with a file browse button;
+  on Next, copy the chosen `.zip` into the working directory (`inbox/`) and unzip, then continue.
+  Browsers can't move a local file by path — receive the uploaded file server-side and write it,
+  or integrate a VS Code file picker.
+- **Explain "Dependency boundary" (Step 2):** add plain-language help under each option
+  (full closure = solution + all dependencies; directly referenced = one hop; solution-owned =
+  packaged components only).
