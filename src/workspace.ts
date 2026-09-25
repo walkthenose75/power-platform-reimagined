@@ -15,21 +15,25 @@ function slugify(value: string): string {
 export async function initializeWorkspace(options: InitOptions): Promise<void> {
   const assessmentId = `assessment:${slugify(options.name)}`;
   const now = new Date().toISOString();
-  const source =
-    options.source === "tenant"
-      ? { type: "tenant", solutionName: options.name }
-      : options.source === "solution-zip"
-        ? {
-            type: "solution-zip",
-            solutionName: options.name,
-            zipPath: options.zipPath,
-            sha256: options.sha256
-          }
-        : {
-            type: "repository",
-            repository: options.repository ?? "REPLACE_WITH_REPOSITORY_URL",
-            revision: options.revision ?? "REPLACE_WITH_REVISION"
-          };
+  let source: Record<string, unknown>;
+  if (options.source === "tenant") {
+    source = { type: "tenant", solutionName: options.name };
+  } else if (options.source === "solution-zip") {
+    source = {
+      type: "solution-zip",
+      solutionName: options.name,
+      zipPath: options.zipPath,
+      sha256: options.sha256
+    };
+  } else if (options.source === "new-concept") {
+    source = { type: "new-concept" };
+  } else {
+    source = {
+      type: "repository",
+      repository: options.repository ?? "REPLACE_WITH_REPOSITORY_URL",
+      revision: options.revision ?? "REPLACE_WITH_REVISION"
+    };
+  }
 
   const model = {
     schemaVersion: "1.0.0",

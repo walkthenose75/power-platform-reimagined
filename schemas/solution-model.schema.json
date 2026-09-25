@@ -77,6 +77,16 @@
             "revision": { "type": "string", "minLength": 1 },
             "environmentEnrichment": { "type": "boolean" }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "new-concept" },
+            "problem": { "type": "string" },
+            "users": { "type": "string" }
+          }
         }
       ]
     },

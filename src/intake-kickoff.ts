@@ -103,9 +103,10 @@ function orderedSteps(slug: string, intake: IntakePayload, ingested: boolean): s
   if (intake.entryMode === "new-concept") {
     return [
       "1. Load the `reimagine-power-platform` skill.",
-      "2. Read `intake.json` — problem, target users, and target.",
-      "3. **Enter plan mode.** With the operator, complete the plan — capabilities and scenarios, the Dataverse data model, and integrations. Get the operator's approval before building.",
-      "4. On approval, build it in a named unmanaged solution and follow `docs/REIMAGINE_PROCESS.md` from Phase 4, stopping at each approval gate."
+      `2. Scaffold the workspace (seeds \`solution-model.json\` + directories):\n\n   \`\`\`powershell\n   npm run reimagine -- init --name "${intake.pilotName}" --source new-concept --output workspaces/${slug}\n   \`\`\``,
+      "3. Read `intake.json` (problem, target users, target); treat `solution-model.json` as the source of truth to populate.",
+      "4. **Enter plan mode.** With the operator, complete the plan — capabilities and scenarios, the Dataverse data model, and integrations. Get the operator's approval before building.",
+      "5. On approval, build it in a named unmanaged solution and follow `docs/REIMAGINE_PROCESS.md` from Phase 4, stopping at each approval gate."
     ].join("\n");
   }
 

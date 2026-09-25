@@ -59,8 +59,10 @@ Teams packaging) and the same publication pipeline (unmanaged solution + Solutio
 
 The rest of the concept — success criteria, capabilities and scenarios, the Dataverse data model,
 and integrations — is developed collaboratively with the agent in **plan mode** right after
-intake, not captured as free-text fields up front. `KICKOFF.md` instructs the agent to enter plan
-mode, complete the plan with the operator, and get approval before building.
+intake, not captured as free-text fields up front. The new-concept `KICKOFF.md` first **scaffolds
+the workspace** (`reimagine init --source new-concept` → seeds `solution-model.json` + the standard
+directories) so plan mode has the canonical model to populate, then instructs the agent to enter
+plan mode, complete the plan with the operator, and get approval before building.
 
 ### Reimagine modes (zip / repo / tenant)
 

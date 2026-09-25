@@ -20,7 +20,7 @@ function printUsage(): void {
   reimagine start --name <name> --zip <solution.zip> --output <directory>
   reimagine start --name <name> --repo <url> [--revision <branch-or-tag>] --output <directory>
   reimagine start --name <name> --inbox <directory> --output <directory>
-  reimagine init --name <name> --source <tenant|repository> --output <directory>
+  reimagine init --name <name> --source <tenant|repository|new-concept> --output <directory>
   reimagine validate --workspace <directory>
   reimagine scan --path <directory>`);
 }
@@ -34,8 +34,8 @@ async function main(): Promise<void> {
 
   if (command === "init") {
     const source = valueOf(args, "--source");
-    if (source !== "tenant" && source !== "repository") {
-      throw new Error("--source must be tenant or repository.");
+    if (source !== "tenant" && source !== "repository" && source !== "new-concept") {
+      throw new Error("--source must be tenant, repository, or new-concept.");
     }
     const options: InitOptions = {
       name: valueOf(args, "--name"),

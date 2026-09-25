@@ -1,4 +1,4 @@
-export type SourceType = "tenant" | "repository" | "solution-zip";
+export type SourceType = "tenant" | "repository" | "solution-zip" | "new-concept";
 
 export interface InitOptions {
   name: string;

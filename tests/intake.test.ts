@@ -70,6 +70,7 @@ test("new-concept kickoff directs the agent into plan mode", () => {
   assert.match(brief, /Enter plan mode/);
   assert.match(brief, /approval before building/i);
   assert.match(brief, /Reimagine this Power Platform solution/);
+  assert.match(brief, /init --name "Fresh Idea" --source new-concept --output workspaces\/fresh-idea/);
 });
 
 test("source-mode kickoff instructs the agent to ingest and the operator to open Copilot", () => {

@@ -59,6 +59,27 @@ test("starts from a ZIP and records source provenance", async () => {
   });
 });
 
+test("initializes and validates a new-concept assessment workspace", async () => {
+  await withTempDirectory(async (directory) => {
+    const workspace = path.join(directory, "assessment");
+    await initializeWorkspace({
+      name: "Fresh Idea",
+      source: "new-concept",
+      output: workspace
+    });
+
+    const result = await validateWorkspace(workspace);
+    assert.equal(result.valid, true, result.errors.join("\n"));
+
+    const model = JSON.parse(await readFile(path.join(workspace, "solution-model.json"), "utf8")) as {
+      source: { type: string };
+      assessment: { stage: string };
+    };
+    assert.equal(model.source.type, "new-concept");
+    assert.equal(model.assessment.stage, "intake");
+  });
+});
+
 test("refuses to overwrite a non-empty workspace", async () => {
   await withTempDirectory(async (directory) => {
     const zip = path.join(directory, "FabrikamCare.zip");
