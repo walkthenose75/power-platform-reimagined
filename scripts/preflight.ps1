@@ -83,12 +83,12 @@ if (Have pac) {
   } elseif ($auth -match [regex]::Escape($targetHost)) {
     Say WARN "pac profile exists but not active" "run: pac auth select (or pac auth create --environment $EnvironmentUrl)"
   } else {
-    Say FAIL "pac profile for env" "run: pac auth create --environment $EnvironmentUrl"
+    Say FAIL "pac profile for env" "one-shot: ./scripts/connect.ps1 -IntakePath <workspace>/intake.json  (or: pac auth create --environment $EnvironmentUrl)"
   }
 }
 $token = Get-Token $EnvironmentUrl
 if (Have az) {
-  if ($token) { Say PASS "az token for env" } else { Say FAIL "az token for env" "run: az login --tenant <target-tenant>" }
+  if ($token) { Say PASS "az token for env" } else { Say FAIL "az token for env" "one-shot: ./scripts/connect.ps1 -IntakePath <workspace>/intake.json  (or: az login --tenant <target-tenant>)" }
 }
 
 Write-Host "`n== Dataverse access & role (target) ==" -ForegroundColor Cyan
