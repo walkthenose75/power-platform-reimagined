@@ -3,12 +3,14 @@
   Ensure a deployed Power Apps CODE APP is a component of the target unmanaged solution.
   Run right AFTER `pac code push`. Idempotent. Requires `az login` to the target tenant.
 
-  Why this exists: code apps are stored as `canvasapp` records (with `canvasapptype = 4`) and appear
-  in a solution as component **type 300**. `pac code push --solutionName` does not always register
-  the app, and the `canvasapp` record can lag the push by a few seconds. Also, the `appId` in the
-  push URL (.../app/<appId>) is not guaranteed to equal the record's `canvasappid` (the value a
-  solution component actually references). So this script **resolves the real `canvasappid`** (by id
-  or by display name), **retries with backoff** until it appears, then adds it by that id and verifies.
+  Why this exists: code apps are stored as `canvasapp` records (`canvasapptype = 4`) and appear in a
+  solution as component **type 300**; the component `objectid` IS the `canvasappid`. Proven on a
+  probe app (pac 2.12.2): a code app deployed with `pac code push` has **no canvasapp record** until
+  it's added to a solution via the maker portal (**Add existing > App**) — so `pac code push
+  --solutionName`, the `AddSolutionComponent` Web API, and `pac solution add-solution-component` all
+  fail to add it ("CanvasApp ... does not exist"). Once the record exists (portal), this script
+  RESOLVES it (by `-AppName` or `-AppId`) and VERIFIES/keeps its solution membership. If a record
+  DOES exist but isn't in the target solution, it adds it via AddSolutionComponent.
 
   Usage:
     ./scripts/add-app-to-solution.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com `
@@ -21,7 +23,7 @@ param(
   [Parameter(Mandatory = $true)][string]$SolutionUnique,
   [string]$AppId,
   [string]$AppName,
-  [int]$RetrySeconds = 60
+  [int]$RetrySeconds = 12
 )
 $ErrorActionPreference = "Stop"
 if (-not $AppId -and -not $AppName) { throw "Provide -AppId (from the push URL) and/or -AppName (the app's display name)." }
@@ -62,8 +64,12 @@ do {
 } while ((Get-Date) -lt $deadline)
 
 if (-not $app) {
-  Write-Host "[WARN] No canvasapp record resolved yet (id='$AppId' name='$AppName')." -ForegroundColor Yellow
-  Write-Host "       Add once via portal: Solutions > $SolutionUnique > Add existing > App, then re-run to verify." -ForegroundColor DarkGray
+  Write-Host "[ACTION REQUIRED] The code app has no Dataverse 'canvasapp' record yet, so it can't be added by API." -ForegroundColor Yellow
+  Write-Host "  In current tooling this is expected: 'pac code push' (even with --solutionName), the AddSolutionComponent" -ForegroundColor DarkGray
+  Write-Host "  Web API, and 'pac solution add-solution-component' all fail until the record exists — and the record is" -ForegroundColor DarkGray
+  Write-Host "  created when you add the app ONCE via the maker portal:" -ForegroundColor DarkGray
+  Write-Host "     make.powerapps.com > Solutions > $SolutionUnique > Add existing > App > select the code app." -ForegroundColor Cyan
+  Write-Host "  Then re-run this script (with -AppName '<display name>') to VERIFY it's a component (type 300)." -ForegroundColor DarkGray
   exit 2
 }
 $cid = $app.canvasappid

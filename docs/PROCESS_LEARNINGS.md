@@ -189,17 +189,21 @@ prefix `inv2`) end-to-end on the tenant. Confirmations and roadblocks:
   (with image) + actionable reorder dashboard** (rows click through, Reorder writes on-hand), and
   the synthetic data is **industry-appropriate** (Providers clinical supplies, not office snacks).
   The agent-as-code flow ran cleanly a **second time** (import + `pac copilot publish`).
-- **Code app → solution: mostly automatable now (hardened `add-app-to-solution.ps1`).** A code app
-  is a **`canvasapp` record** (`canvasapptype = 4`) and appears in a solution as component **type
-  300** — its solution-component `objectid` **is the `canvasappid`**. The earlier failure was that
-  the script filtered `canvasappid eq <push-URL appId>`, but **the push-URL `appId` is not
-  guaranteed to equal `canvasappid`**, and the record can lag `pac code push`. Fixed: the script
-  now **resolves the real `canvasappid` by `-AppName` (display name, scoped to `canvasapptype 4`) or
-  `-AppId`**, **retries with backoff** while the record settles, adds it, and **verifies** — proven
-  live against the VirtualRounding code app (resolves by name → canvasappid → idempotent SKIP). The
-  maker-portal **Add existing → App** remains the fallback if the record never resolves. Net: for
-  Dataverse assets everything lands via the `MSCRM.SolutionUniqueName` header + `ensure-solution`;
-  for the code app this resolver closes most of the gap.
+- **Code app → solution needs the maker portal (PROVEN with a probe app, pac 2.12.2).** A code app
+  is a **`canvasapp` record** (`canvasapptype = 4`), solution component **type 300**, whose
+  `objectid` **is the `canvasappid`**. Empirically, a freshly `pac code push`ed app has **no
+  canvasapp record at all** (query by id or name → none), so **every programmatic add fails**:
+  `pac code push --solutionName` doesn't add it, the `AddSolutionComponent` Web API and
+  `pac solution add-solution-component --componentType 300` both fail *"Cannot add CanvasApp … it
+  does not exist"*. The record is created only when you add the app **once via the portal**
+  (Solutions → Add existing → App) — which is why VirtualRounding (portal-added) has a record and a
+  fresh app doesn't. This is a Power Apps **code-apps preview limitation**, not a kit defect.
+  `add-app-to-solution.ps1` now reflects this: it **resolves the record by `-AppName`/`-AppId` and
+  verifies** type-300 membership (and will API-add if a record exists but isn't in the target
+  solution); if there's no record it prints the required portal step. **Dataverse assets (tables,
+  choices, agent) still land fully automatically** via `ensure-solution` + the
+  `MSCRM.SolutionUniqueName` header — only the code app needs the one portal click, and
+  `audit-solution.ps1`/`acceptance.ps1` verify/gate it.
 - **Scaffold-reuse friction:** copying a code-app dir's `node_modules` left it partial and
   `npm install` said "up to date" while `tsc` still failed — a **clean reinstall** was needed; and
   `pac code init` refuses if `power.config.json` exists. Don't copy `node_modules`; a "clone code
