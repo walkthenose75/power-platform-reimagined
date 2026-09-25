@@ -62,6 +62,37 @@ pac code init --environment <env-url> --displayName "<App>"
 Verify `power.config.json` (`environmentId` set; `appId` null until first push). A noisy
 `Assertion failed ... UV_HANDLE_CLOSING` line on Windows at process exit is non-fatal.
 
+## UI system — Fluent UI 2 (default)
+
+Build the code-app UI with **Fluent UI 2** (Fluent v9) unless intake selects a custom design
+system. It makes the app look first-party inside Power Apps and Teams, ships accessible
+(WCAG/ARIA) components, and can auto-match the Teams theme.
+
+```
+npm install @fluentui/react-components @fluentui/react-icons
+```
+
+Wrap the app root in a `FluentProvider` and pick the theme by host:
+
+```tsx
+import { FluentProvider, webLightTheme, webDarkTheme, teamsLightTheme, teamsDarkTheme, teamsHighContrastTheme } from "@fluentui/react-components";
+// In a Teams tab, read the theme from the Teams JS SDK (app.getContext()) and
+// registerOnThemeChangeHandler; map "default|dark|contrast" -> teams*Theme.
+// In a standalone browser, follow prefers-color-scheme -> webLight/webDark.
+<FluentProvider theme={theme}>{/* app */}</FluentProvider>
+```
+
+Guidance:
+
+- Use Fluent components (`DataGrid`, `Field`, `Dialog`, `Combobox`, `Button`, …) and
+  `@fluentui/react-icons` instead of hand-rolled CSS; use `makeStyles`/tokens for spacing and color.
+- Standardize on **v9** (`@fluentui/react-components`). Avoid v8 (`@fluentui/react`) and the
+  deprecated Teams "Northstar."
+- Keep components keyboard- and screen-reader-accessible; Fluent's defaults do most of this.
+
+> Version note: the Virtual Rounding pilot app predates this convention (hand-rolled CSS);
+> new reimaginings default to Fluent 2, and existing apps can be retrofitted.
+
 ## 3. Create publisher + unmanaged solution (Dataverse Web API)
 
 Using the `add-dataverse` auth helper (az token):

@@ -40,10 +40,56 @@ test("accepts a new-concept intake without a source", async () => {
     pilotName: "Fresh Idea",
     entryMode: "new-concept",
     target: baseTarget,
-    concept: { problem: "Nurses need faster rounding." }
+    concept: { problem: "Nurses need faster rounding.", users: "Bedside nurses", successCriteria: "Rounds in under 2 minutes" }
   };
   const result = await validateObject(intake, "intake.schema.json");
   assert.equal(result.valid, true, result.errors.join("\n"));
+});
+
+test("rejects retired concept fields (capabilities/data/integrations)", async () => {
+  const intake = {
+    schemaVersion: "1.0.0",
+    pilotName: "Fresh Idea",
+    entryMode: "new-concept",
+    target: baseTarget,
+    concept: { problem: "x", capabilities: "should not be captured here" }
+  };
+  const result = await validateObject(intake, "intake.schema.json");
+  assert.equal(result.valid, false);
+});
+
+test("new-concept kickoff directs the agent into plan mode", () => {
+  const brief = kickoff("fresh-idea", {
+    pilotName: "Fresh Idea",
+    entryMode: "new-concept"
+  });
+  assert.match(brief, /Enter plan mode/);
+  assert.match(brief, /approval before building/i);
+  assert.match(brief, /Reimagine this Power Platform solution/);
+});
+
+test("source-mode kickoff instructs the agent to ingest and the operator to open Copilot", () => {
+  const brief = kickoff("care-ops", {
+    pilotName: "Care Ops",
+    entryMode: "repository",
+    source: { repository: "https://example.invalid/repo", revision: "main", dependencyBoundary: "full-closure" }
+  });
+  assert.match(brief, /Ingest the source into this workspace/);
+  assert.match(brief, /--repo https:\/\/example\.invalid\/repo/);
+  assert.match(brief, /boundary: Everything it depends on/);
+  assert.match(brief, /Open this folder in Copilot and say/);
+  assert.match(brief, /Reimagine this Power Platform solution/);
+});
+
+test("ingested kickoff does not re-issue the start command", () => {
+  const intake = {
+    pilotName: "Care Ops",
+    entryMode: "solution-zip" as const,
+    source: { zipPath: "inbox/care-ops/Care.zip" }
+  };
+  const brief = kickoff("care-ops", intake, { ingested: true });
+  assert.match(brief, /Source already ingested into `evidence\/`/);
+  assert.doesNotMatch(brief, /npm run reimagine -- start/);
 });
 
 test("requires an agent harness when Copilot Studio is in scope", async () => {
@@ -88,6 +134,30 @@ test("accepts a target with no agents block", async () => {
   };
   const result = await validateObject(intake, "intake.schema.json");
   assert.equal(result.valid, true, result.errors.join("\n"));
+});
+
+test("accepts a known uiSystem and rejects an unknown one", async () => {
+  const ok = await validateObject(
+    { schemaVersion: "1.0.0", pilotName: "UI", entryMode: "new-concept", target: { ...baseTarget, uiSystem: "custom" } },
+    "intake.schema.json"
+  );
+  assert.equal(ok.valid, true, ok.errors.join("\n"));
+  const bad = await validateObject(
+    { schemaVersion: "1.0.0", pilotName: "UI", entryMode: "new-concept", target: { ...baseTarget, uiSystem: "material" } },
+    "intake.schema.json"
+  );
+  assert.equal(bad.valid, false);
+});
+
+test("kickoff build conventions default to Fluent 2 and note recommended models", () => {
+  const fluent = kickoff("care-ops", { pilotName: "Care Ops", entryMode: "new-concept" });
+  assert.match(fluent, /## Build conventions/);
+  assert.match(fluent, /Fluent UI 2/);
+  assert.match(fluent, /Recommended models/);
+
+  const custom = kickoff("care-ops", { pilotName: "Care Ops", entryMode: "new-concept", target: { uiSystem: "custom" } });
+  assert.match(custom, /Custom \/ bespoke design system/);
+  assert.doesNotMatch(custom, /Fluent UI 2/);
 });
 
 test("rejects an unknown industry value", async () => {

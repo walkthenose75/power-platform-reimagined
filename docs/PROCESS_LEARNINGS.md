@@ -108,8 +108,21 @@ The machine did have the **Power Platform CLI (`pac`)**, so we adapted to the **
   to bring columns/relationships), then delete the old container (unmanaged deletion keeps the
   components in the environment).
 
-## Mapping pattern: SharePoint list → Dataverse
+## Build conventions — Fluent UI 2 + models
 
+- **UI system: Fluent UI 2 (`@fluentui/react-components` v9) by default.** Reimagined code apps
+  live inside Power Apps and Teams, so Fluent 2 gives a first-party look, accessible (WCAG/ARIA)
+  components, and **Teams theme sync** (light/dark/high-contrast) for the personal-tab surface.
+  Wrap the root in `FluentProvider`; use `@fluentui/react-icons` and Fluent components
+  (`DataGrid`, `Field`, `Dialog`). Avoid v8 (`@fluentui/react`) and Northstar. The Virtual
+  Rounding pilot predates this (hand-rolled CSS); default new work to Fluent 2. Intake captures
+  `target.uiSystem` (`fluent2` | `custom`).
+- **Models:** drive the build phases with the strongest agentic **coding** model available
+  (Claude Sonnet-class); use a high-**reasoning** model (GPT-5 / o-series) for the architecture
+  and plan-mode gates. Pick the strongest models the selected harness offers; the GitHub Copilot
+  harness is single-agent (no background runs).
+
+## Mapping pattern: SharePoint list → Dataverse
 - Text-flag columns that trigger flows (e.g., "Reset Room", "Share Externally") become proper
   **choice/boolean fields + status**, with logic moved into the app or flows.
 - Flatten reference CSVs (Location/SubLocation) into **related Dataverse tables with lookups**.

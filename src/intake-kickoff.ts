@@ -7,8 +7,10 @@ export interface IntakePayload {
     zipPath?: string;
     environmentUrl?: string;
     solutionName?: string;
+    dependencyBoundary?: "full-closure" | "referenced-only" | "solution-owned";
   };
   target?: {
+    uiSystem?: "fluent2" | "custom";
     agents?: {
       copilotStudio?: boolean;
       m365Copilot?: boolean;
@@ -16,6 +18,19 @@ export interface IntakePayload {
     };
   };
 }
+
+export interface KickoffOptions {
+  /** True when the source has already been ingested (e.g. the CLI `start` ran). */
+  ingested?: boolean;
+}
+
+const OPERATOR_PHRASE = "Reimagine this Power Platform solution.";
+
+const BOUNDARY_LABEL: Record<NonNullable<NonNullable<IntakePayload["source"]>["dependencyBoundary"]>, string> = {
+  "full-closure": "Everything it depends on",
+  "referenced-only": "Solution + one hop out",
+  "solution-owned": "Only what's inside the solution"
+};
 
 export function nextCommand(slug: string, intake: IntakePayload): string | null {
   const output = `workspaces/${slug}`;
@@ -31,6 +46,83 @@ export function nextCommand(slug: string, intake: IntakePayload): string | null 
     case "new-concept":
       return null;
   }
+}
+
+function sourceLine(intake: IntakePayload): string {
+  const source = intake.source ?? {};
+  const boundary =
+    intake.entryMode !== "new-concept" && source.dependencyBoundary
+      ? ` · boundary: ${BOUNDARY_LABEL[source.dependencyBoundary]}`
+      : "";
+  switch (intake.entryMode) {
+    case "repository":
+      return `GitHub repo \`${source.repository ?? "<repo-url>"}\` @ \`${source.revision || "main"}\`${boundary}`;
+    case "solution-zip":
+      return `Uploaded solution ZIP \`${source.zipPath ?? "<path-to-zip>"}\`${boundary}`;
+    case "tenant":
+      return `Tenant solution \`${source.solutionName ?? "<solution>"}\` in \`${source.environmentUrl ?? "<environment-url>"}\`${boundary}`;
+    case "new-concept":
+      return "New concept (greenfield) — no existing source";
+  }
+}
+
+function ingestionBlock(slug: string, intake: IntakePayload): string {
+  const output = `workspaces/${slug}`;
+  const name = intake.pilotName;
+  const source = intake.source ?? {};
+  switch (intake.entryMode) {
+    case "repository":
+      return `Clone and seed the workspace:
+
+   \`\`\`powershell
+   npm run reimagine -- start --name "${name}" --repo ${source.repository ?? "<repo-url>"} --revision ${source.revision || "main"} --output ${output}
+   \`\`\``;
+    case "solution-zip":
+      return `Seed the workspace from the uploaded export (already saved by the wizard):
+
+   \`\`\`powershell
+   npm run reimagine -- start --name "${name}" --zip "${source.zipPath ?? "<path-to-zip>"}" --output ${output}
+   \`\`\``;
+    case "tenant": {
+      const env = source.environmentUrl ?? "<environment-url>";
+      const solution = source.solutionName ?? "<solution>";
+      return `Authenticate to the **source** environment if needed, export the solution, then seed the workspace:
+
+   \`\`\`powershell
+   pac auth create --environment ${env}
+   pac solution export --path .\\inbox\\${slug}\\${solution}.zip --name ${solution} --managed false --environment ${env}
+   npm run reimagine -- start --name "${name}" --zip ".\\inbox\\${slug}\\${solution}.zip" --output ${output}
+   \`\`\``;
+    }
+    case "new-concept":
+      return "";
+  }
+}
+
+function orderedSteps(slug: string, intake: IntakePayload, ingested: boolean): string {
+  if (intake.entryMode === "new-concept") {
+    return [
+      "1. Load the `reimagine-power-platform` skill.",
+      "2. Read `intake.json` — problem, target users, success criteria, and target.",
+      "3. **Enter plan mode.** With the operator, complete the plan — capabilities and scenarios, the Dataverse data model, and integrations. Get the operator's approval before building.",
+      "4. On approval, build it in a named unmanaged solution and follow `docs/REIMAGINE_PROCESS.md` from Phase 4, stopping at each approval gate."
+    ].join("\n");
+  }
+
+  if (ingested) {
+    return [
+      "1. Load the `reimagine-power-platform` skill.",
+      "2. Source already ingested into `evidence/`. Read `intake.json` and validate `solution-model.json`.",
+      "3. Follow `docs/REIMAGINE_PROCESS.md` (discovery → plan → build → review → publish), stopping at each approval gate."
+    ].join("\n");
+  }
+
+  return [
+    "1. Load the `reimagine-power-platform` skill.",
+    `2. Ingest the source into this workspace. ${ingestionBlock(slug, intake)}`,
+    "3. Read `intake.json` and validate `solution-model.json`.",
+    "4. Follow `docs/REIMAGINE_PROCESS.md` (discovery → plan → build → review → publish), stopping at each approval gate."
+  ].join("\n");
 }
 
 export function agentsBrief(intake: IntakePayload): string {
@@ -61,30 +153,42 @@ export function agentsBrief(intake: IntakePayload): string {
   ].join("\n");
 }
 
-export function kickoff(slug: string, intake: IntakePayload): string {
-  const cmd = nextCommand(slug, intake);
-  const ingest =
-    intake.entryMode === "new-concept"
-      ? "This is a **new concept** (greenfield). Skip source discovery. Use `intake.json` (concept + target) to design the modern solution directly, then build it in a named unmanaged solution."
-      : `Ingest the source into this workspace, then continue:\n\n\`\`\`powershell\n${cmd}\n\`\`\``;
+function buildConventions(intake: IntakePayload): string {
+  const custom = intake.target?.uiSystem === "custom";
+  const uiLine = custom
+    ? "Custom / bespoke design system, per intake — Fluent 2 is not required."
+    : "**Fluent UI 2** (`@fluentui/react-components` v9) via `FluentProvider`; use `@fluentui/react-icons` and Fluent components (DataGrid, Field, Dialog). When packaged as a Teams tab, sync the Teams theme (light / dark / high-contrast); otherwise follow `prefers-color-scheme`.";
+  return `
 
+## Build conventions
+
+- **UI system:** ${uiLine}
+- **Recommended models:** drive the build with the strongest agentic **coding** model available (Claude Sonnet-class); use a high-**reasoning** model (GPT-5 / o-series) for the architecture and plan-mode gates. Pick the strongest your harness offers.`;
+}
+
+export function kickoff(slug: string, intake: IntakePayload, options: KickoffOptions = {}): string {
+  const ingested = options.ingested ?? false;
   return `# Kickoff Brief — ${intake.pilotName}
 
 ## Intake
 
 Captured by the guided intake wizard. See \`intake.json\` in this folder for the full brief.
 
-- Entry mode: **${intake.entryMode}**${agentsBrief(intake)}
+- Entry mode: **${intake.entryMode}**
+- Source: ${sourceLine(intake)}${agentsBrief(intake)}
+
+## Start here (operator)
+
+Open this folder in Copilot and say: **"${OPERATOR_PHRASE}"**
+
+That's the only step you run. Copilot performs everything below and stops only at the approval gates.
 
 ## Current gate
 
 Intake complete. No environment mutation has been authorized.
 
-## Next actions for Copilot
+## Copilot — do these in order
 
-1. Load the \`reimagine-power-platform\` skill.
-2. Read \`intake.json\` — it holds source, target, features, synthetic-data, and publish details.
-3. ${ingest}
-4. Follow the phased process in \`docs/REIMAGINE_PROCESS.md\`, stopping at each approval gate.
+${orderedSteps(slug, intake, ingested)}${buildConventions(intake)}
 `;
 }

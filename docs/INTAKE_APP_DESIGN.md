@@ -42,6 +42,7 @@ Teams packaging) and the same publication pipeline (unmanaged solution + Solutio
 - Pilot / solution name
 - Target environment URL (+ optional GUID) and sign-in account/tenant
 - Target surface: code app; Teams packaging (yes/no)
+- App UI system: Fluent UI 2 (default) or custom design system
 - Conversational agents: whether Copilot Studio and/or Microsoft 365 Copilot (declarative) agents
   are in scope, and — when either is — the **agent authoring harness** (Standard vs GitHub Copilot)
 - Synthetic data: realism level + volume
@@ -55,10 +56,12 @@ Teams packaging) and the same publication pipeline (unmanaged solution + Solutio
 
 - Problem statement and business value
 - Target users / personas
-- Key capabilities and scenarios
-- Data the app must manage (entities/relationships in plain language)
-- Integrations needed (email, Teams, facilities system, FHIR, etc.)
 - Success/acceptance criteria
+
+The rest of the concept — capabilities and scenarios, the Dataverse data model, and integrations
+— is developed collaboratively with the agent in **plan mode** right after intake, not captured
+as free-text fields up front. `KICKOFF.md` instructs the agent to enter plan mode, complete the
+plan with the operator, and get approval before building.
 
 ### Reimagine modes (zip / repo / tenant)
 
@@ -74,12 +77,27 @@ Teams packaging) and the same publication pipeline (unmanaged solution + Solutio
 - Seeds `solution-model.json` (assessment + source) and `KICKOFF.md`
 - Remaining reasoning (discovery, architecture, build) continues in the Copilot workflow
 
-## Run experience (proposed)
+## Run experience
 
 ```
 npm run intake            # starts local server, opens browser
 # fill form -> Submit -> writes workspaces/<pilot>/intake.json + KICKOFF.md
 ```
+
+After Submit the operator does exactly one thing, the same for all four entry modes: open
+`workspaces/<pilot>/KICKOFF.md` in Copilot and say **"Reimagine this Power Platform solution."**
+The operator never runs a command. Copilot owns all source ingestion — the unified `KICKOFF.md`
+tells it how, per mode:
+
+| Entry mode | Copilot's first action |
+|---|---|
+| GitHub repo | `start --repo` (clone + seed the model) |
+| Solution .zip | `start --zip` from the file the wizard already saved to `inbox/<pilot>/` |
+| Tenant | authenticate to the source env, `pac solution export`, then `start --zip` |
+| New concept | enter plan mode and complete the plan with the operator |
+
+The CLI `start` regenerates the same unified brief (marking the source ingested) instead of
+overwriting it, so wizard and CLI stay consistent and re-runs are avoided.
 
 ## Fits the process where?
 
@@ -118,3 +136,13 @@ enablement check once auth is present).
   toggle stays, now with a hover/focus tooltip explaining that it also builds a Teams app package
   (manifest + icons) embedding the code app as a personal tab, and noting the CSP
   `frame-ancestors` requirement.
+- **New-concept Details trimmed:** capabilities, "data the app manages", and integrations were
+  removed from the form. New concepts capture only problem, target users, and success criteria;
+  the rest is developed with the agent in plan mode after intake.
+- **Unified post-submit (all 4 modes):** Submit produces one consistent `KICKOFF.md`. The operator
+  always does the same single step (open in Copilot, one phrase); the agent owns ingestion per
+  mode; the CLI `start` regenerates rather than overwrites the brief.
+- **UI system + model guidance:** intake captures `target.uiSystem` (Fluent UI 2 by default, or
+  custom). `KICKOFF.md` carries a "Build conventions" block — Fluent 2 (v9) with Teams theme sync,
+  plus recommended models (strong agentic-coding model for the build, high-reasoning model for the
+  gates).

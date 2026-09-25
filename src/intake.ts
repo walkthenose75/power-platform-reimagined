@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { copyFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
+import { type IntakePayload, kickoff } from "./intake-kickoff.js";
 import type { InitOptions } from "./types.js";
 import { validateWorkspace } from "./validation.js";
 import { initializeWorkspace } from "./workspace.js";
@@ -75,6 +76,18 @@ async function sha256(file: string): Promise<string> {
 }
 
 async function writeKickoffBrief(output: string, sourceSummary: string): Promise<void> {
+  const intakePath = path.join(output, "intake.json");
+  try {
+    const intake = JSON.parse(await readFile(intakePath, "utf8")) as IntakePayload;
+    if (typeof intake.pilotName === "string" && typeof intake.entryMode === "string") {
+      const slug = path.basename(output);
+      await writeFile(path.join(output, "KICKOFF.md"), kickoff(slug, intake, { ingested: true }), "utf8");
+      return;
+    }
+  } catch {
+    // No wizard intake.json (pure CLI use) — fall back to the standalone brief below.
+  }
+
   const brief = `# Kickoff Brief
 
 ## Source

@@ -27,9 +27,6 @@
       "properties": {
         "problem": { "type": "string" },
         "users": { "type": "string" },
-        "capabilities": { "type": "string" },
-        "data": { "type": "string" },
-        "integrations": { "type": "string" },
         "successCriteria": { "type": "string" }
       }
     },
@@ -51,6 +48,7 @@
         "environmentUrl": { "type": "string" },
         "signInAccount": { "type": "string" },
         "teamsPackaging": { "type": "boolean" },
+        "uiSystem": { "enum": ["fluent2", "custom"] },
         "agents": {
           "type": "object",
           "additionalProperties": false,

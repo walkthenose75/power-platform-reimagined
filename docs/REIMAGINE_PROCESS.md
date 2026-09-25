@@ -26,6 +26,10 @@ agent never interrupts you mid-build. (The Virtual Rounding pilot proved why thi
 friction was never the code; it was code-apps enablement, cross-tenant auth, and solution
 naming. The wizard now captures all of that up front.)
 
+> **Recommended models:** run the build with the strongest agentic **coding** model available
+> (Claude Sonnet-class); use a high-**reasoning** model (GPT-5 / o-series) for the architecture
+> and plan-mode gates. Pick the strongest models your harness offers.
+
 ## The single spine
 
 Everything flows through one artifact chain, so nothing is ever re-asked or re-derived:
@@ -99,7 +103,9 @@ largely hands-off; 8 is ongoing. Total hands-on decision time: ~15–20 minutes.
 - **You do:** Authorize the build once.
 - **The kit does:** Creates the publisher and a **cleanly named unmanaged solution first**, then
   builds **everything inside it** — Dataverse tables, the code app, data sources, UI, and a
-  coherent, **fictitious** synthetic dataset.
+  coherent, **fictitious** synthetic dataset. The code-app UI is built with **Fluent UI 2** by
+  default (Microsoft-native look, Teams theme sync, accessible), unless intake picks a custom
+  design system.
 - **Gate:** — (decisions were front-loaded; runs on autopilot).
 - **You get:** A working app with tables and demo data, all contained in your solution.
 - **Friction removed:** No plumbing, nothing stranded in the Default solution, no "reimagined"

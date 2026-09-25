@@ -21,6 +21,7 @@ Run an evidence-backed, gated workflow from source intake through an installable
 - Authenticated access to any tenant, SharePoint site, repository, or API explicitly included in scope.
 - Relevant specialist agents or skills for each discovered workload.
 - A clean target environment before installation validation.
+- **Recommended models:** run the build phases with the strongest agentic **coding** model available (Claude Sonnet-class); use a high-**reasoning** model (GPT-5 / o-series) for the architecture and plan-mode gates. Pick the strongest models the selected harness offers.
 
 ## Non-negotiable boundaries
 
@@ -144,7 +145,10 @@ Build **solution-first** and keep **everything** in the one named unmanaged solu
 1. **Create the container first:** `scripts/ensure-solution.ps1` (publisher + unmanaged solution).
 2. **Tables/choices:** create with the `MSCRM.SolutionUniqueName=<solution>` header so they land in it.
 3. **Experiences:** implement custom experiences as **code apps** (never target canvas apps);
-   retain or redesign approved model-driven experiences.
+   retain or redesign approved model-driven experiences. Build the code-app UI with **Fluent UI 2**
+   (`@fluentui/react-components` v9) by default — `FluentProvider`, Fluent components and
+   `@fluentui/react-icons`, and **Teams theme sync** (light/dark/high-contrast) when packaged as a
+   tab — unless intake selects a custom design system. See [Code app build runbook](../../docs/CODE_APP_BUILD_RUNBOOK.md).
 4. **Deploy + add the app:** `pac code push --solutionName <solution>`, then
    `scripts/add-app-to-solution.ps1` — push does **not** reliably add the app itself.
 5. **Connectors/flows/config:** add connectors as **connection references** in the solution;

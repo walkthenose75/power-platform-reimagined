@@ -129,6 +129,12 @@
     <label>Sign-in account (tenant to build in)</label>
     <input id="signInAccount" type="text" placeholder="you@tenant.onmicrosoft.com" />
     <div class="toggle"><input type="checkbox" id="teamsPackaging" checked /><label for="teamsPackaging" style="margin:0">Package as a Microsoft Teams personal tab</label><span class="tip" tabindex="0" role="note" aria-label="What does packaging as a Microsoft Teams personal tab mean?">i<span class="tipbox">Also builds a Microsoft Teams app package (manifest + icons) that embeds the code app as a <b>personal tab</b> — so people can open it from Teams' left rail instead of only in a browser. Optional: the app still works in the browser either way. Note: the app's CSP <code>frame-ancestors</code> must allow <code>teams.microsoft.com</code>, or the tab renders blank.</span></span></div>
+    <label>App UI system</label>
+    <select id="uiSystem">
+      <option value="fluent2">Fluent UI 2 — Microsoft-native, Teams theming, accessible (recommended)</option>
+      <option value="custom">Custom / bespoke design system</option>
+    </select>
+    <p class="hint">Fluent UI 2 (<code>@fluentui/react-components</code> v9) makes the code app look first-party in Power Apps and Teams, syncs the Teams light/dark/high-contrast theme, and is accessible by default. Pick <b>Custom</b> only if the demo needs a distinct brand.</p>
     <label>Conversational agents in this solution</label>
     <div class="toggle"><input type="checkbox" id="agentCopilotStudio" /><label for="agentCopilotStudio" style="margin:0">Includes Copilot Studio agent(s)</label></div>
     <div class="toggle"><input type="checkbox" id="agentM365" /><label for="agentM365" style="margin:0">Includes Microsoft 365 Copilot (declarative) agent(s)</label></div>
@@ -158,11 +164,12 @@
     </div>
     <div id="details-concept" class="hidden">
       <label>Problem &amp; business value</label>
-      <textarea id="c-problem"></textarea>
-      <div class="row"><div><label>Target users</label><input id="c-users" type="text" /></div><div><label>Key capabilities</label><input id="c-capabilities" type="text" /></div></div>
-      <label>Data the app manages</label>
-      <textarea id="c-data" placeholder="Entities and relationships in plain language."></textarea>
-      <div class="row"><div><label>Integrations</label><input id="c-integrations" type="text" placeholder="email, Teams, FHIR…" /></div><div><label>Success criteria</label><input id="c-success" type="text" /></div></div>
+      <textarea id="c-problem" placeholder="What problem does this solve, and why does it matter?"></textarea>
+      <label>Target users</label>
+      <input id="c-users" type="text" placeholder="Who uses it? (roles / personas)" />
+      <label>Success criteria</label>
+      <input id="c-success" type="text" placeholder="How will you know it worked?" />
+      <p class="hint">That's enough to start. Capabilities, the data model, and integrations are worked out <b>with the agent in plan mode</b> right after intake — no need to pre-write them here.</p>
     </div>
     <div class="row">
       <div><label>Synthetic data realism</label>
@@ -323,7 +330,7 @@ async function uploadZip(){
 function buildPayload(){
   const p={ schemaVersion:'1.0.0', pilotName:val('pilotName'), entryMode:mode,
     target:{ surface:'code-app', environmentUrl:val('target-env'), signInAccount:val('signInAccount'),
-      teamsPackaging:checked('teamsPackaging') },
+      teamsPackaging:checked('teamsPackaging'), uiSystem:val('uiSystem') },
     synthetic:{ realism:val('realism'), volume:val('volume') },
     publish:{ githubRepoUrl:val('githubRepoUrl'),
       solutionHub:{ title:val('sh-title'), industry:(chipValues('industry')[0]||''),
@@ -337,7 +344,7 @@ function buildPayload(){
   else if(mode==='solution-zip') p.source={ zipPath:uploadedZipPath };
   else if(mode==='tenant') p.source={ environmentUrl:val('srcEnvUrl'), solutionName:val('solutionName') };
   if(mode!=='new-concept' && p.source){ p.source.dependencyBoundary=val('dependencyBoundary'); }
-  if(mode==='new-concept') p.concept={ problem:val('c-problem'), users:val('c-users'), capabilities:val('c-capabilities'), data:val('c-data'), integrations:val('c-integrations'), successCriteria:val('c-success') };
+  if(mode==='new-concept') p.concept={ problem:val('c-problem'), users:val('c-users'), successCriteria:val('c-success') };
   else p.reimagine={ painPoints:val('painPoints'), keepChangeDrop:val('keepChangeDrop'), featureIdeas:val('featureIdeas') };
   return p;
 }
@@ -363,8 +370,7 @@ async function submit(){
   const r=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const data=await r.json();
   if(!data.ok){ res.innerHTML=`<p style="color:var(--bad)"><b>Couldn't save:</b></p><pre>${(data.errors||[]).join('\n')}</pre>`; return; }
-  const cmd=data.nextCommand?`<p>Then run:</p><pre>${data.nextCommand}</pre>`:`<p>New concept — no ingestion needed. Ask Copilot to start from <code>intake.json</code>.</p>`;
-  res.innerHTML=`<div class="done-box"><h3 style="margin:0 0 8px">Saved ✓</h3><p>Brief written to <code>${data.workspace}/intake.json</code> and <code>KICKOFF.md</code>.</p>${cmd}<p>Open <b>${data.workspace}/KICKOFF.md</b> in Copilot and say: <b>Reimagine this Power Platform solution.</b></p></div>`;
+  res.innerHTML=`<div class="done-box"><h3 style="margin:0 0 8px">Saved ✓</h3><p>Your brief is written to <code>${data.workspace}/intake.json</code> and <code>${data.workspace}/KICKOFF.md</code>.</p><p><b>One step from here:</b> open <code>${data.workspace}/KICKOFF.md</code> in Copilot and say:</p><p style="font-size:16px"><b>“Reimagine this Power Platform solution.”</b></p><p class="hint">Copilot takes over from there — it ingests the source (or, for a new concept, plans it with you), then builds, reviews, and publishes, stopping only at the approval gates. You never run a command yourself.</p></div>`;
 }
 
 function validateStep(){
