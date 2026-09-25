@@ -10,6 +10,13 @@ The toolkit is designed for Solution Engineers working in VS Code with Copilot. 
 - traceability from source evidence to target decisions;
 - realistic synthetic demo data that does not copy source records.
 
+> ## ▶ Start here: [Day 1 — First run](docs/DAY_1.md)
+>
+> New to the kit? That guide takes you from zero to a running reimagining — and makes the two
+> choices that decide success **unmissable**: run it in an **agentic harness** (VS Code Copilot
+> **Agent mode** / Copilot CLI), and use a **frontier model** (**Claude Sonnet 4.5**; **Opus** for
+> the hardest reasoning). In plain chat the AI can't run your build and the experience degrades.
+
 ## Target experience
 
 1. Name a pilot and choose a solution ZIP, tenant, or GitHub source.
@@ -80,10 +87,11 @@ npm run reimagine -- scan --path workspaces/fabrikam-care/publication
 | Path | Purpose |
 |---|---|
 | `skills/reimagine-power-platform/` | Guided VS Code/Copilot workflow |
-| `scripts/` | Env-aware PowerShell: preflight, solution-first creation, add-app-to-solution, everything-in-solution audit |
+| `scripts/` | Env-aware PowerShell: preflight (readiness gate), solution-first creation, add-app-to-solution, everything-in-solution audit |
 | `schemas/` | Versioned artifact contracts |
 | `src/` | Deterministic CLI utilities |
 | `tests/` | Validation and sanitization tests |
+| `docs/DAY_1.md` | **Start here** — first run, harness + model choice |
 | `docs/ARCHITECTURE.md` | System design and trust boundaries |
 | `docs/OPERATOR_WORKFLOW.md` | Stage-by-stage operator guide |
 | `docs/PREREQUISITES.md` | Tooling, extensions, accounts, and licensing to set up first |
