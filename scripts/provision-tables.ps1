@@ -64,6 +64,17 @@ function ColumnMeta($c) {
     "datetime" { return @{ "@odata.type"="Microsoft.Dynamics.CRM.DateTimeAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req; Format="DateAndTime"; DateTimeBehavior=@{ Value="UserLocal" } } }
     "image"    { return @{ "@odata.type"="Microsoft.Dynamics.CRM.ImageAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req; MaxSizeInKB=10240 } }
     "file"     { return @{ "@odata.type"="Microsoft.Dynamics.CRM.FileAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req; MaxSizeInKB=32768 } }
+    { $_ -in "choice","optionset","picklist" } {
+      $opts = @()
+      foreach ($o in @($c.options)) {
+        if ($null -eq $o) { continue }
+        if ($o -is [string]) { $opts += @{ "@odata.type"="Microsoft.Dynamics.CRM.OptionMetadata"; Label=(Label $o) } }
+        else { $opts += @{ "@odata.type"="Microsoft.Dynamics.CRM.OptionMetadata"; Label=(Label $o.label); Value=[int]$o.value } }
+      }
+      if ($opts.Count -eq 0) { throw "choice column '$sn' needs a non-empty 'options' array" }
+      return @{ "@odata.type"="Microsoft.Dynamics.CRM.PicklistAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req;
+        OptionSet=@{ "@odata.type"="Microsoft.Dynamics.CRM.OptionSetMetadata"; IsGlobal=$false; OptionSetType="Picklist"; Options=$opts } }
+    }
     default    { throw "Unknown column type '$($c.type)' for $sn" }
   }
 }
