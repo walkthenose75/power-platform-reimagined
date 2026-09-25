@@ -18,7 +18,7 @@ export const STAGES: StageMeta[] = [
   { id: "synthetic-data", phase: "Design synthetic data", gate: "Synthetic data approved", next: (ws) => `Design fictitious demo data, then: npm run reimagine -- gate synthetic-data --workspace ${ws}` },
   { id: "build", phase: "Build", gate: "Mutation authorized + everything-in-solution audit clean", next: (ws) => `Get build authorization; build solution-first; audit-solution.ps1; then: npm run reimagine -- gate build --workspace ${ws}` },
   { id: "validation", phase: "Validate", gate: "ACCEPTED (acceptance check passes)", next: (ws) => `Run ./scripts/acceptance.ps1 ... to ACCEPTED, then: npm run reimagine -- gate validation --workspace ${ws}` },
-  { id: "publication", phase: "Publish", gate: "Publication approved (sanitization scan clean)", next: (ws) => `Run the scan; on approval publish, then: npm run reimagine -- gate publication --workspace ${ws}` }
+  { id: "publication", phase: "Publish", gate: "Publication approved (sanitization scan clean)", next: (ws) => `Assemble the bundle: npm run reimagine -- package --workspace ${ws}; on approval publish (gh), then: npm run reimagine -- gate publication --workspace ${ws}` }
 ];
 
 export interface StatusReport {

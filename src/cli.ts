@@ -1,6 +1,7 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { startFromRepository, startFromZip } from "./intake.js";
+import { packagePublication, renderPackageReport } from "./package.js";
 import { scanPath } from "./sanitizer.js";
 import { approveGate, computeStatus, findNewestWorkspace, renderStatus } from "./status.js";
 import type { InitOptions, SourceType } from "./types.js";
@@ -32,6 +33,7 @@ function printUsage(): void {
   reimagine start --name <name> --inbox <directory> --output <directory>
   reimagine init --name <name> --source <tenant|repository|new-concept> --output <directory>
   reimagine validate --workspace <directory>
+  reimagine package [--workspace <directory>] [--out <directory>]   # assemble the GitHub/Solution Hub bundle
   reimagine scan --path <directory>`);
 }
 
@@ -125,6 +127,22 @@ async function main(): Promise<void> {
       await startFromZip({ name, zip: path.join(inbox, zipFiles[0]!), output });
     }
     console.log(`Kickoff complete. Open ${path.resolve(output, "KICKOFF.md")} in Copilot.`);
+    return;
+  }
+
+  if (command === "package") {
+    const workspace = optionalValueOf(args, "--workspace")
+      ? path.resolve(valueOf(args, "--workspace"))
+      : await findNewestWorkspace();
+    if (!workspace) {
+      throw new Error("No workspace found. Pass --workspace <directory>.");
+    }
+    const outArg = optionalValueOf(args, "--out");
+    const report = await packagePublication(workspace, outArg ? { outDir: path.resolve(outArg) } : {});
+    console.log(renderPackageReport(report));
+    if (report.scanFindings.length > 0) {
+      process.exitCode = 2;
+    }
     return;
   }
 

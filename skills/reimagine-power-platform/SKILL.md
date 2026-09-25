@@ -182,15 +182,16 @@ An import failure blocks release.
 
 ### 10. Package and publish
 
-Generate GitHub and Solution HUB assets from approved artifacts. Include install, configuration, demo, customization, architecture, screenshots, diagrams, metadata, and optional video guidance.
+Generate GitHub and Solution HUB (Solution City) assets from approved artifacts. Include install, configuration, demo, customization, architecture, screenshots, diagrams, metadata, and optional video guidance.
 
-Run:
+Assemble the bundle (README/docs, `SOLUTION_HUB.md` + `solution-hub.json` with the Solution City fields, and a sanitization scan) and confirm the Hub fields are **READY**:
 
 ```powershell
-npm run reimagine -- scan --path "<publication-directory>"
+npm run reimagine -- package --workspace "workspaces/<pilot>"
+npm run reimagine -- scan --path "workspaces/<pilot>/publication"
 ```
 
-Any finding blocks publication. Require human publication approval.
+`package` writes `publication/` (the GitHub‑postable asset) and reports Solution City readiness (missing fields are flagged). Any scan finding blocks publication. Require human publication approval, then `gh repo create <name> --public --source . --push`.
 
 ## Progress & gates (stay on rail — no drift)
 
