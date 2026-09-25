@@ -49,13 +49,25 @@ Pilot-specific discovery and rebuilding begin after a source solution is selecte
 
 ## Quick start
 
-Prerequisites: see **[Day 1 — First run](docs/DAY_1.md)**. Verify your machine in one command:
+Prerequisites: see **[Day 1 — First run](docs/DAY_1.md)**.
+
+**Fastest start (zero local setup):** open this repo in a **GitHub Codespace** (Code → Codespaces →
+Create), or clone it and **Reopen in Container** in VS Code — the [.devcontainer](.devcontainer/devcontainer.json)
+provisions Node 22, .NET, `pac`, `az`, `gh`, and the VS Code extensions, then runs `npm install`.
+
+**Local:** verify your machine in one command:
 
 ```powershell
 npm install
 npm run doctor      # checks tools, versions, VS Code extensions, and repo deps
 npm run intake      # the guided intake wizard (recommended front door)
 npm run status      # anytime: where am I, and what's the one next step?
+```
+
+After intake, connect the sign-ins the build needs:
+
+```powershell
+./scripts/connect.ps1 -IntakePath workspaces/<pilot>/intake.json   # pac + az + gh
 ```
 
 Prefer the command line instead of the wizard?

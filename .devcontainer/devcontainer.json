@@ -1,0 +1,28 @@
+{
+  "name": "Power Platform Reimagined",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/dotnet:2": { "version": "8.0" },
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/powershell:1": {}
+  },
+  "postCreateCommand": "dotnet tool install --global Microsoft.PowerApps.CLI.Tool || true; npm install",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/node/.dotnet/tools"
+  },
+  "forwardPorts": [5170],
+  "portsAttributes": {
+    "5170": { "label": "Intake wizard", "onAutoForward": "openBrowser" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "microsoft-isvexptools.powerplatform-vscode",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-vscode.powershell"
+      ]
+    }
+  }
+}

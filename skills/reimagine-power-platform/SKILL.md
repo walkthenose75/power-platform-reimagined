@@ -158,6 +158,13 @@ Build **solution-first** and keep **everything** in the one named unmanaged solu
    `scripts/add-app-to-solution.ps1` — push does **not** reliably add the app itself.
 5. **Connectors/flows/config:** add connectors as **connection references** in the solution;
    create flows and environment variables in the solution.
+5a. **Agents (do not skip):** when Copilot Studio / M365 Copilot agents are in scope, **author them**,
+   don't just document them. In the **Standard harness**, route to the Copilot Studio specialists
+   (Author for YAML, Manage for clone/pull/push/publish, Test for evaluation) to build the agent
+   (instructions, topics, tools) and push it into the solution. For a Dataverse‑grounded agent,
+   author it to use the **Dataverse MCP Server** tool. Only the connection consent + final
+   publish/approval are manual (record them in `manualSteps` → `MANUAL_STEPS.md`). In the **GitHub
+   Copilot harness**, author the agent YAML interactively and treat push/publish as manual.
 6. **Synthetic data:** load with `scripts/load-synthetic-data.ps1 -ManifestPath <manifest>` — it
    is manifest-driven, resolves lookups by target key, is type-aware, and idempotent. Key the CSVs
    to the **target** schema (Dataverse logical names or a `columnMap`).
