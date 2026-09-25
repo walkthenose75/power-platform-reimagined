@@ -195,6 +195,11 @@ Generate reviewable CSV files (keyed to the **target** schema — Dataverse logi
 Build **solution-first** and keep **everything** in the one named unmanaged solution.
 
 1. **Create the container first:** `scripts/ensure-solution.ps1` (publisher + unmanaged solution).
+   Derive the names from the pilot (Dataverse rules): **`Prefix`** = 2–8 **lowercase alphanumeric**
+   (e.g. *Biomedical Equipment Maintenance* → `bem`); **`SolutionUnique`** = **PascalCase, no
+   spaces** and immutable (`BiomedicalEquipmentMaintenance`); `SolutionFriendly` = the display name;
+   `PublisherUnique`/`PublisherFriendly` = a demo publisher (e.g. `bemdemo` / "BEM Demo"). Never leak
+   the kit's "reimagine" branding into these names.
 2. **Tables/choices:** create with the `MSCRM.SolutionUniqueName=<solution>` header so they land in it. Use `scripts/provision-tables.ps1 -SpecFile <tables.json>` (generic: tables, columns, lookups; types include `image`/`file`). **Recreate every source column** captured in discovery — including images/files — so the reimagined app keeps full fidelity.
 3. **Experiences:** implement custom experiences as **code apps** (never target canvas apps);
    retain or redesign approved model-driven experiences. Build the code-app UI with **Fluent UI 2**
