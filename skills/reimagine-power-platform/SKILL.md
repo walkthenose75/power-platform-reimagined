@@ -207,7 +207,12 @@ Build **solution-first** and keep **everything** in the one named unmanaged solu
    `@fluentui/react-icons`, and **Teams theme sync** (light/dark/high-contrast) when packaged as a
    tab — unless intake selects a custom design system. See [Code app build runbook](../../docs/CODE_APP_BUILD_RUNBOOK.md).
 4. **Deploy + add the app:** `pac code push --solutionName <solution>`, then
-   `scripts/add-app-to-solution.ps1` — push does **not** reliably add the app itself.
+   `scripts/add-app-to-solution.ps1 -EnvironmentUrl <env> -SolutionUnique <solution> -AppName "<app display name>"`
+   (or `-AppId <push-URL app id>`). Push doesn't always register the app; the script **resolves the
+   real `canvasappid`** (a code app is a `canvasapp` record, `canvasapptype = 4`, solution component
+   **type 300**) — by name or id — **retries with backoff** while the record settles, adds it, and
+   verifies. If it still can't resolve the record it prints the one-time portal fallback (**Add
+   existing → App**).
 5. **Connectors/flows/config:** add connectors as **connection references** in the solution;
    create flows and environment variables in the solution.
 5a. **Agents (do not skip):** when Copilot Studio / M365 Copilot agents are in scope, **build them

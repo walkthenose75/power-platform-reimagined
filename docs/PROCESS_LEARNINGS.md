@@ -189,10 +189,17 @@ prefix `inv2`) end-to-end on the tenant. Confirmations and roadblocks:
   (with image) + actionable reorder dashboard** (rows click through, Reorder writes on-hand), and
   the synthetic data is **industry-appropriate** (Providers clinical supplies, not office snacks).
   The agent-as-code flow ran cleanly a **second time** (import + `pac copilot publish`).
-- **Hard roadblock (unchanged): code app → solution needs the portal.** After `pac code push` there
-  is **no `canvasapps` record** until the app is added to the solution via the maker portal
-  (Solutions → Add existing → App); `add-app-to-solution.ps1` 400s `0x80040217`, and the record was
-  still absent 10+ min later. This is the one acceptance blocker and cannot be automated headlessly.
+- **Code app → solution: mostly automatable now (hardened `add-app-to-solution.ps1`).** A code app
+  is a **`canvasapp` record** (`canvasapptype = 4`) and appears in a solution as component **type
+  300** — its solution-component `objectid` **is the `canvasappid`**. The earlier failure was that
+  the script filtered `canvasappid eq <push-URL appId>`, but **the push-URL `appId` is not
+  guaranteed to equal `canvasappid`**, and the record can lag `pac code push`. Fixed: the script
+  now **resolves the real `canvasappid` by `-AppName` (display name, scoped to `canvasapptype 4`) or
+  `-AppId`**, **retries with backoff** while the record settles, adds it, and **verifies** — proven
+  live against the VirtualRounding code app (resolves by name → canvasappid → idempotent SKIP). The
+  maker-portal **Add existing → App** remains the fallback if the record never resolves. Net: for
+  Dataverse assets everything lands via the `MSCRM.SolutionUniqueName` header + `ensure-solution`;
+  for the code app this resolver closes most of the gap.
 - **Scaffold-reuse friction:** copying a code-app dir's `node_modules` left it partial and
   `npm install` said "up to date" while `tsc` still failed — a **clean reinstall** was needed; and
   `pac code init` refuses if `power.config.json` exists. Don't copy `node_modules`; a "clone code

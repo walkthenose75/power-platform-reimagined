@@ -74,11 +74,11 @@ export const MANUAL_STEP_CATALOG: ManualStepCatalogItem[] = [
     id: "add-app-to-solution",
     title: "Confirm the code app is a component of the solution",
     category: "solution",
-    why: "`pac code push --solutionName` does not reliably register the app as a solution component (there is no canvasapps record until it is known to a solution).",
+    why: "`pac code push --solutionName` does not always register the app as a solution component, and the underlying `canvasapp` record (a code app is `canvasapptype = 4`, solution component type 300) can lag the push.",
     where: "make.powerapps.com → Solutions → <solution> → Add existing → App",
     steps: [
-      "Run `scripts/add-app-to-solution.ps1` first (it adds it via AddSolutionComponent).",
-      "If it is still missing, in the portal open the solution → Add existing → App → select the code app.",
+      "Run `scripts/add-app-to-solution.ps1 -EnvironmentUrl <env> -SolutionUnique <solution> -AppName \"<app display name>\"` (or `-AppId <push-URL id>`). It resolves the real canvasappid, retries with backoff, adds it, and verifies.",
+      "Only if it can't resolve the record: in the portal open the solution → Add existing → App → select the code app, then re-run the script to verify.",
       "Re-run `scripts/audit-solution.ps1` to confirm the app appears (component type 300)."
     ],
     automatableInStandardHarness: true,
