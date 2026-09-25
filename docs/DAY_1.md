@@ -127,15 +127,20 @@ every `FAIL` before building.
 
 ## When you're stuck
 
+**First stop: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — a symptom → fix table for the common
+stalls (code‑apps `403`, wrong tenant, expired token, metadata timing, blank Teams tab, …). Or
+just run `npm run status` for the next action.
+
 - **`403 CodeAppOperationNotAllowedInEnvironment`** on first push → code apps aren't enabled on
   the env (admin toggle + a few minutes to propagate). See
   [CODE_APP_BUILD_RUNBOOK.md](CODE_APP_BUILD_RUNBOOK.md#p1-enable-code-apps-in-the-target-environment-required).
 - **Auth points at the wrong tenant** → `pac auth create --environment <url>` and
   `az login --tenant <target-tenant>`; the source may be a *different* tenant than the target.
-- **More gotchas** → [PROCESS_LEARNINGS.md](PROCESS_LEARNINGS.md).
+- **Full history** → [PROCESS_LEARNINGS.md](PROCESS_LEARNINGS.md).
 
 ## Related
 
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — symptom → fix quick reference
 - [PREREQUISITES.md](PREREQUISITES.md) — full install + accounts/roles/licensing checklist
 - [REIMAGINE_PROCESS.md](REIMAGINE_PROCESS.md) — the 8‑phase journey and gates
 - [CODE_APP_BUILD_RUNBOOK.md](CODE_APP_BUILD_RUNBOOK.md) — the code‑app build sequence (Fluent UI 2 default)

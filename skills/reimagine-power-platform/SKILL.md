@@ -61,7 +61,7 @@ npm run reimagine -- start --name "<pilot-name>" --inbox "<inbox-directory>" --o
 npm run reimagine -- start --name "<pilot-name>" --repo "<repository-url>" --revision "<branch-or-tag>" --output "workspaces/<pilot>"
 ```
 
-Read `KICKOFF.md` and validate the workspace. For a tenant source that has not been exported, use the applicable lifecycle specialist to export it first.
+Read `KICKOFF.md` and validate the workspace. For a tenant source that has not been exported, run `scripts/export-source-solution.ps1 -IntakePath <workspace>/intake.json` (or the applicable lifecycle specialist) to export and seed it first.
 
 Intake approval must establish the source, full dependency boundary, permitted APIs, owner, and publication intent.
 

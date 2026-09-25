@@ -113,6 +113,6 @@ if ($PublicationPath) {
 }
 
 Write-Host ""
-if ($fail -gt 0) { Write-Host "NOT ACCEPTED: $fail blocker(s), $warn warning(s). Fix the FAILs above." -ForegroundColor Red; exit 1 }
+if ($fail -gt 0) { Write-Host "NOT ACCEPTED: $fail blocker(s), $warn warning(s). Fix the FAILs above. See docs/TROUBLESHOOTING.md." -ForegroundColor Red; exit 1 }
 elseif ($warn -gt 0) { Write-Host "ACCEPTED (with $warn warning(s) to review)." -ForegroundColor Yellow }
 else { Write-Host "ACCEPTED: the reimagined solution is complete and demo-ready." -ForegroundColor Green }

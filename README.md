@@ -95,6 +95,7 @@ npm run reimagine -- scan --path workspaces/fabrikam-care/publication
 | `src/` | Deterministic CLI utilities |
 | `tests/` | Validation and sanitization tests |
 | `docs/DAY_1.md` | **Start here** — first run, harness + model choice |
+| `docs/TROUBLESHOOTING.md` | Symptom → fix quick reference for common stalls |
 | `docs/ARCHITECTURE.md` | System design and trust boundaries |
 | `docs/OPERATOR_WORKFLOW.md` | Stage-by-stage operator guide |
 | `docs/PREREQUISITES.md` | Tooling, extensions, accounts, and licensing to set up first |

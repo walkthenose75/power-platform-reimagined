@@ -215,10 +215,11 @@
 
   <!-- Step 6: Review -->
   <section class="card step hidden" data-step="5">
-    <h2>6 · Readiness &amp; submit</h2>
-    <p class="sub">Preflight checks your machine; submit writes the brief.</p>
-    <button id="runPreflight" type="button">Run preflight checks</button>
+    <h2>6 · Machine check &amp; submit</h2>
+    <p class="sub">This is the <b>Doctor</b> — it checks your machine (tools, versions, sign-ins). The <b>environment readiness gate</b> runs after intake, before the build.</p>
+    <button id="runPreflight" type="button">Run machine checks (Doctor)</button>
     <ul class="checks" id="checks"></ul>
+    <p class="hint">After you submit, Copilot runs the environment readiness gate for you: <code>./scripts/preflight.ps1 -IntakePath workspaces/&lt;pilot&gt;/intake.json</code> (source auth, code-apps enablement, license).</p>
     <div id="result"></div>
   </section>
 

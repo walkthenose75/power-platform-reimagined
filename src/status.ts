@@ -193,7 +193,7 @@ export function renderStatus(report: StatusReport): string {
   lines.push(`Pending gate:  ${report.pendingGate}`);
   lines.push(`Next action:   ${report.nextAction}`);
   if (!report.complete) {
-    lines.push("", "Tip: run `npm run status` anytime. If blocked, see docs/PROCESS_LEARNINGS.md.");
+    lines.push("", "Tip: run `npm run status` anytime. If blocked, see docs/TROUBLESHOOTING.md.");
   }
   return lines.join("\n");
 }

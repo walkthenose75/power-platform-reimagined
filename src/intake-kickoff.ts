@@ -86,13 +86,14 @@ function ingestionBlock(slug: string, intake: IntakePayload): string {
     case "tenant": {
       const env = source.environmentUrl ?? "<environment-url>";
       const solution = source.solutionName ?? "<solution>";
-      return `Authenticate to the **source** environment if needed, export the solution, then seed the workspace:
+      return `Authenticate to the **source** environment, then run the one-button export + seed:
 
    \`\`\`powershell
    pac auth create --environment ${env}
-   pac solution export --path .\\inbox\\${slug}\\${solution}.zip --name ${solution} --managed false --environment ${env}
-   npm run reimagine -- start --name "${name}" --zip ".\\inbox\\${slug}\\${solution}.zip" --output ${output}
-   \`\`\``;
+   ./scripts/export-source-solution.ps1 -IntakePath workspaces/${slug}/intake.json
+   \`\`\`
+
+   (Equivalent long form: \`pac solution export --path .\\inbox\\${slug}\\${solution}.zip --name ${solution} --managed false --environment ${env}\` then \`npm run reimagine -- start --name "${name}" --zip ".\\inbox\\${slug}\\${solution}.zip" --output ${output}\`.)`;
     }
     case "new-concept":
       return "";

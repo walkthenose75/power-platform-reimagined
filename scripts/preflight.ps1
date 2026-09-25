@@ -190,6 +190,6 @@ if ($teamsPackaging) {
 }
 
 Write-Host ""
-if ($fail -gt 0) { Write-Host "PREFLIGHT: $fail FAIL, $warn WARN - resolve failures before building." -ForegroundColor Red; exit 1 }
+if ($fail -gt 0) { Write-Host "PREFLIGHT: $fail FAIL, $warn WARN - resolve failures before building. See docs/TROUBLESHOOTING.md." -ForegroundColor Red; exit 1 }
 elseif ($warn -gt 0) { Write-Host "PREFLIGHT: ready, with $warn warning(s) to review." -ForegroundColor Yellow }
 else { Write-Host "PREFLIGHT: all green - ready to build." -ForegroundColor Green }
