@@ -97,6 +97,26 @@ agent was built as code and imported **into the solution and the environment**:
 - Kit: `scripts/build-agent.ps1` (init→inject→pack→import), `src/agent-build.ts` +
   `reimagine agent-guide`, and audit/acceptance now recognize component type 10225.
 
+#### Finishing the agent live — verified authoritative last mile (Inventory pilot)
+
+- **`pac copilot publish --bot <schemaName>` works headlessly.** Published `inv_InventoryAssistant`
+  live; it then appears in `pac copilot list` as **Published** and its `bots` record shows a fresh
+  `publishedon`. Do this right after import so the agent surfaces in the Agents list.
+- **"I don't see the agent in the solution" is usually a UI grouping issue, not a real gap.** Verify
+  with the API, not the portal tree: the agent is a `solutioncomponents` row with **componenttype
+  10225** whose `objectid` equals the `botid`. In the new maker portal it shows under **Agents** /
+  the solution's **Agent** objects — not under Apps/Tables.
+- **Dataverse MCP is on by default for the Copilot Studio client** (per Learn
+  `data-platform-mcp-disable`). So adding the Dataverse MCP tool is genuinely ~2 clicks + one OAuth
+  consent — **no admin feature toggle** for the in-agent tool. Only *external* MCP clients (VS Code
+  GitHub Copilot, Claude) need PPAC → Settings → Product → Features enablement. `agent-build.ts`
+  now states this and uses the authoritative labels (**+ Add tool → Model Context Protocol →
+  Dataverse MCP Server → Add to agent**) plus grounded **test prompts**.
+- **Make the code app embed-ready, not a placeholder.** The app's Assistant tab now renders an
+  `<iframe>` from **`VITE_AGENT_EMBED_URL`** when set (Copilot Studio → Channels → Custom website),
+  and falls back to the setup steps otherwise — so the agent lights up with a build var, no code
+  change. `agent-guide` accepts `--tables/--built/--prefix/--solution` to fully tailor the guide.
+
 ## Discovery depth — UNPACK the real packages, not just the docs (CRITICAL)
 
 The single biggest miss on the pilot: I first reconstructed behavior from **README/docs + setup

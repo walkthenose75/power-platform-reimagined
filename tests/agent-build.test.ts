@@ -20,6 +20,11 @@ test("agent guide covers the code build, MCP tool, publish, and embed", () => {
   assert.match(doc, /Publish/);
   assert.match(doc, /Embed in the code app/);
   assert.match(doc, /Already built and imported/);
+  assert.match(doc, /Add to agent/);
+  assert.match(doc, /enabled by default for the Copilot Studio client/);
+  assert.match(doc, /VITE_AGENT_EMBED_URL/);
+  assert.match(doc, /describe the inv_InventoryItem table/);
+  assert.match(doc, /already \*\*Published\*\*/);
 });
 
 test("agent guide shows the build command when not yet built, and M365 admin approval when applicable", () => {

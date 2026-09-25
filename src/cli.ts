@@ -45,7 +45,7 @@ function printUsage(): void {
   reimagine init --name <name> --source <tenant|repository|new-concept> --output <directory>
   reimagine validate --workspace <directory>
   reimagine manual-guide [--workspace <directory>] [--out <file>]   # UI/manual steps the agent can't automate
-  reimagine agent-guide [--workspace <directory>] [--out <file>]    # Copilot Studio agent build + finish guide
+  reimagine agent-guide [--workspace <directory>] [--out <file>] [--tables a,b] [--built] [--prefix inv] [--solution Name]    # Copilot Studio agent build + finish guide
   reimagine package [--workspace <directory>] [--out <directory>]   # assemble the GitHub/Solution Hub bundle
   reimagine scan --path <directory>`);
 }
@@ -178,7 +178,16 @@ async function main(): Promise<void> {
     const outFile = optionalValueOf(args, "--out")
       ? path.resolve(valueOf(args, "--out"))
       : path.join(workspace, "AGENT_BUILD.md");
-    await writeFile(outFile, renderAgentBuild(intake), "utf8");
+    const groundingTables = optionalValueOf(args, "--tables")
+      ? valueOf(args, "--tables").split(",").map((t) => t.trim()).filter(Boolean)
+      : undefined;
+    const agentOptions = {
+      ...(groundingTables ? { groundingTables } : {}),
+      ...(args.includes("--built") ? { built: true } : {}),
+      ...(optionalValueOf(args, "--prefix") ? { prefix: valueOf(args, "--prefix") } : {}),
+      ...(optionalValueOf(args, "--solution") ? { solution: valueOf(args, "--solution") } : {})
+    };
+    await writeFile(outFile, renderAgentBuild(intake, agentOptions), "utf8");
     console.log(`Agent build guide written to ${outFile}`);
     return;
   }

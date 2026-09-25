@@ -15,6 +15,20 @@ function agentKinds(intake: IntakePayload): { copilotStudio: boolean; m365: bool
   return { copilotStudio: Boolean(a.copilotStudio), m365: Boolean(a.m365Copilot) };
 }
 
+/** A few grounded test prompts, tailored to the grounding tables when we have them. */
+function testPrompts(intake: IntakePayload, tables: string[]): string[] {
+  const prompts = ["show me the tables in Dataverse"];
+  const first = tables[0];
+  if (first) {
+    prompts.push(`describe the ${first} table`);
+    prompts.push(`how many rows are in ${first}?`);
+  } else {
+    prompts.push(`how many records does ${intake.pilotName} have?`);
+  }
+  prompts.push("what needs attention right now?");
+  return prompts;
+}
+
 /**
  * Generate AGENT_BUILD.md — how to finish/refine a Copilot Studio agent built with the new
  * experience (GitHub Copilot harness). The agent itself is authored as code (pac copilot); this
@@ -60,51 +74,68 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   }
   lines.push("");
 
-  lines.push("## 2. Add the Dataverse MCP tool + connection (UI, one-time)");
+  lines.push("## 2. Add the Dataverse MCP tool (Copilot Studio, ~2 clicks)");
   lines.push(
-    "This is a connector/consent flow and can't be fully authored in code (OAuth consent is interactive)."
+    "Grounding the agent on live Dataverse data is a one-time **connection consent** — the only step " +
+      "that can't be authored in code (OAuth consent is interactive). It's quick:"
   );
   lines.push("");
-  lines.push("1. Open the agent in **copilotstudio.microsoft.com** → **Build** tab → **Tools** → **Add a tool**.");
-  lines.push("2. Choose **Model Context Protocol** → **Dataverse MCP Server**.");
-  lines.push("3. **Authorize the connection** (create/confirm the Dataverse connection).");
-  lines.push(`4. Scope it to ${tablesLine}. Select **Add and configure**.`);
+  lines.push("1. Open **copilotstudio.microsoft.com** → pick your environment → **Agents** → open the agent.");
+  lines.push("2. In the **Tools** section, select **+ Add tool**.");
+  lines.push("3. Choose **Model Context Protocol** → **Dataverse MCP Server**.");
+  lines.push("4. If prompted, **create/authorize the Dataverse connection** (one-time sign-in consent).");
+  lines.push("5. Select **Add to agent**.");
+  lines.push(`6. *(Optional)* **… → Edit** next to the tool to scope which tables/tools are exposed (${tablesLine}).`);
   lines.push("");
   lines.push(
-    "> Ensure the **Dataverse MCP Server (preview)** feature is enabled for the environment (PPAC → " +
-      "Environment → Settings → Product → Features). See `MANUAL_STEPS.md`."
+    "> The Dataverse MCP server is **enabled by default for the Copilot Studio client**, so there's " +
+      "usually nothing to turn on. Only *external* MCP clients (VS Code GitHub Copilot, Claude) need admin " +
+      "enablement in PPAC → Environment → **Settings → Product → Features → Dataverse Model Context Protocol**."
   );
   lines.push("");
 
-  lines.push("## 3. Refine the agent (optional) — paste into the Build tab");
+  lines.push("## 3. Test it (Copilot Studio test pane)");
   lines.push("");
-  lines.push("If you want to expand behavior, paste this into the agent's **Build** (describe/refine) box:");
+  lines.push("With the tool added, try these in **Test your agent**:");
+  lines.push("");
+  for (const p of testPrompts(intake, tables)) lines.push(`- "${p}"`);
+  lines.push("");
+
+  lines.push("## 4. Refine the agent (optional) — paste into the Build tab");
+  lines.push("");
+  lines.push("To expand behavior, paste this into the agent's **Build** (describe/refine) box:");
   lines.push("");
   lines.push("```text");
   lines.push(
     `You are the ${intake.pilotName} assistant${industryLine}. Ground every answer in Dataverse via the ` +
-      `Dataverse MCP Server over ${tablesLine}. Help users find records, see details (including images), ` +
-      `report items that need attention, summarize by category, and take safe update actions on request. ` +
-      `Be concise, show numbers, and proactively flag anything that needs action. Ask a brief clarifying ` +
-      `question when a request is ambiguous.`
+      `Dataverse MCP Server over ${tablesLine}. Help users find records, report items that need attention, ` +
+      `summarize by category, and take safe update actions on request. Be concise, show numbers, and ` +
+      `proactively flag anything that needs action. Ask a brief clarifying question when a request is ambiguous.`
   );
   lines.push("```");
   lines.push("");
 
-  lines.push("## 4. Publish + channels");
+  lines.push("## 5. Publish + channels");
   lines.push("");
-  lines.push("1. In Copilot Studio, **Publish** the agent.");
-  if (m365) lines.push("2. Enable the **Microsoft 365 Copilot** channel; a tenant admin approves it (M365 admin center → Integrated apps).");
-  if (copilotStudio || !m365) lines.push("2. Enable the channel(s) you need — **Microsoft Teams** and/or **demo web**.");
+  if (built) {
+    lines.push("The agent is already **Published** (the build script publishes it). Re-publish after any change.");
+  } else {
+    lines.push("1. In Copilot Studio, **Publish** the agent.");
+  }
+  if (m365) lines.push("- Enable the **Microsoft 365 Copilot** channel; a tenant admin approves it (M365 admin center → Integrated apps).");
+  if (copilotStudio || !m365) lines.push("- Enable the channel(s) you need — **Microsoft Teams** and/or a **Custom website** (for the code-app embed below).");
   lines.push("");
 
-  lines.push("## 5. Embed in the code app");
+  lines.push("## 6. Embed in the code app");
   lines.push("");
   lines.push(
-    "The code app's **Assistant** tab hosts the agent once it's published. Copy the agent's **demo web / " +
-      "embed URL** (or a Direct Line token endpoint) from its channel settings and set it in the app's " +
-      "agent‑embed config/environment value. The app works without it; the agent plugs in when ready."
+    "The code app's **Assistant** tab renders the agent as soon as its embed URL is set — no code change " +
+      "needed:"
   );
+  lines.push("");
+  lines.push("1. In Copilot Studio → **Channels** → **Custom website** (or **Web/Direct Line**), copy the agent's **embed URL**.");
+  lines.push("2. Set it as the app's **`VITE_AGENT_EMBED_URL`** build variable (e.g. in the code app's `.env`), then redeploy.");
+  lines.push("3. The **Assistant** tab now hosts the live agent; until then it shows these setup steps.");
   lines.push("");
   return lines.join("\n");
 }
