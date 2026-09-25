@@ -72,6 +72,7 @@
       "additionalProperties": false,
       "properties": {
         "githubRepoUrl": { "type": "string" },
+        "visibility": { "enum": ["public", "private", ""] },
         "liveDemoUrl": { "type": "string" },
         "solutionHub": {
           "type": "object",

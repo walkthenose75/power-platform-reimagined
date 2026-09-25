@@ -2,6 +2,7 @@ import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path";
 import type { IntakePayload } from "./intake-kickoff.js";
 import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
+import { type PublishTarget, renderPublishTarget } from "./publish.js";
 import { scanPath } from "./sanitizer.js";
 import type { ScanFinding } from "./types.js";
 
@@ -17,6 +18,7 @@ export interface PackageReport {
   pilotName: string;
   hub: HubReadiness;
   hubManifest: Record<string, unknown>;
+  publishTarget: PublishTarget;
   scanFindings: ScanFinding[];
   files: string[];
 }
@@ -181,8 +183,9 @@ export async function packagePublication(workspace: string, options: { outDir?: 
   }
 
   const scanFindings = await scanPath(outputDir);
+  const publishTarget = renderPublishTarget(intake as unknown as IntakePayload, ".");
 
-  return { workspace: workspace.replaceAll("\\", "/"), outputDir: outputDir.replaceAll("\\", "/"), pilotName, hub: readiness, hubManifest: manifest, scanFindings, files };
+  return { workspace: workspace.replaceAll("\\", "/"), outputDir: outputDir.replaceAll("\\", "/"), pilotName, hub: readiness, hubManifest: manifest, publishTarget, scanFindings, files };
 }
 
 export function renderPackageReport(report: PackageReport): string {
@@ -202,6 +205,16 @@ export function renderPackageReport(report: PackageReport): string {
   } else {
     lines.push("Sanitization scan: clean (no secrets / tenant IDs).");
   }
-  lines.push("", "Publish: cd into the output, then `gh repo create <name> --public --source . --push`.");
+  lines.push("");
+  const t = report.publishTarget;
+  if (t.command) {
+    lines.push(`Publish (uses the repo captured at intake — ${t.owner}/${t.name}, ${t.visibility}):`);
+    lines.push(`  cd ${report.outputDir}`);
+    lines.push(`  ${t.command}`);
+  } else {
+    lines.push("Publish: no GitHub repo URL captured at intake. From the output dir:");
+    lines.push("  gh repo create <owner>/<name> --public --source . --push");
+  }
+  for (const w of t.warnings) lines.push(`  ! ${w}`);
   return lines.join("\n");
 }

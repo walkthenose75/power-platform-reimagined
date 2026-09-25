@@ -185,6 +185,12 @@
     <p class="sub">Where it goes when it's ready. All optional now — you can fill later.</p>
     <label>GitHub repository URL</label>
     <input id="githubRepoUrl" type="url" placeholder="https://github.com/org/repo" />
+    <p class="hint">Publication creates <b>this exact repo</b> (owner/name). Leave blank to decide later.</p>
+    <label>Repository visibility</label>
+    <select id="repoVisibility">
+      <option value="public">Public</option>
+      <option value="private">Private</option>
+    </select>
     <label>Solution Hub title</label>
     <input id="sh-title" type="text" placeholder="e.g. Virtual Rounding" />
     <label>Industry</label>
@@ -331,7 +337,7 @@ function buildPayload(){
     target:{ surface:'code-app', environmentUrl:val('target-env'), signInAccount:val('signInAccount'),
       teamsPackaging:checked('teamsPackaging'), uiSystem:val('uiSystem') },
     synthetic:{ realism:val('realism'), volume:val('volume') },
-    publish:{ githubRepoUrl:val('githubRepoUrl'),
+    publish:{ githubRepoUrl:val('githubRepoUrl'), visibility:val('repoVisibility'),
       solutionHub:{ title:val('sh-title'), industry:(chipValues('industry')[0]||''),
         contentTypes:chipValues('contentTypes'), technicalAreas:chipValues('technicalAreas'),
         contributors:val('contributors'), narrative:val('narrative') } },
