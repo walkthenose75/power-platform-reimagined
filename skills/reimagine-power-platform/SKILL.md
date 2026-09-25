@@ -120,6 +120,20 @@ regression, not a reimagining. Note any column you deliberately drop as an expli
 
 Populate `solution-model.json`. Record access failures and unsupported artifacts in `unknowns`; never fill gaps with plausible content.
 
+**Model authoring quick-reference (avoid `$defs` trips).** Every `component`, `decision`,
+`claim`, and `featureOpportunity` **requires `evidenceIds`** pointing to real `evidence` entries
+(`kind`: export-artifact | api-result | repository-artifact | aggregate-profile |
+owner-confirmation). Required fields:
+- `component`: `id, name, workload, kind, scope, evidenceIds` (+ optional `metadata`).
+- `decision`: `id, title, status, decision, rationale, evidenceIds`.
+- `featureOpportunity`: `id, title, origin, problem, personas, scores{value,effort,risk,strategicFit,demoValue: 1–5}, disposition, evidenceIds`.
+- `evidence`: `id, kind, locator, collectedAt, collector`.
+For a **new-concept** (greenfield) there is no source evidence — run
+`npm run reimagine -- plan-scaffold --workspace <ws>` to seed a **valid** draft (an
+`owner-confirmation` evidence entry `evidence:intake-brief` + the target-surface decision), then
+cite `evidence:intake-brief` on the components/features you add. Run `npm run reimagine -- validate`
+after edits.
+
 Stop at the discovery gate with coverage, evidence quality, and blockers.
 
 ### 4. Reconstruct intent

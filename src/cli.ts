@@ -3,6 +3,7 @@ import path from "node:path";
 import { startFromRepository, startFromZip } from "./intake.js";
 import type { IntakePayload } from "./intake-kickoff.js";
 import { renderAgentBuild } from "./agent-build.js";
+import { scaffoldPlan } from "./plan-scaffold.js";
 import { packagePublication, renderPackageReport } from "./package.js";
 import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
 import { scanPath } from "./sanitizer.js";
@@ -43,6 +44,7 @@ function printUsage(): void {
   reimagine start --name <name> --repo <url> [--revision <branch-or-tag>] --output <directory>
   reimagine start --name <name> --inbox <directory> --output <directory>
   reimagine init --name <name> --source <tenant|repository|new-concept> --output <directory>
+  reimagine plan-scaffold [--workspace <directory>]    # seed a valid draft target model for plan mode (new-concept)
   reimagine validate --workspace <directory>
   reimagine manual-guide [--workspace <directory>] [--out <file>]   # UI/manual steps the agent can't automate
   reimagine agent-guide [--workspace <directory>] [--out <file>] [--tables a,b] [--built] [--prefix inv] [--solution Name]    # Copilot Studio agent build + finish guide
@@ -104,6 +106,37 @@ async function main(): Promise<void> {
     };
     await initializeWorkspace(options);
     console.log(`Initialized assessment workspace at ${options.output}`);
+    return;
+  }
+
+  if (command === "plan-scaffold") {
+    const workspace = optionalValueOf(args, "--workspace")
+      ? path.resolve(valueOf(args, "--workspace"))
+      : await findNewestWorkspace();
+    if (!workspace) {
+      throw new Error("No workspace found. Pass --workspace <directory>.");
+    }
+    const intake = (await readJsonFile(path.join(workspace, "intake.json"))) as IntakePayload | null;
+    if (!intake || !intake.pilotName) {
+      throw new Error(`No intake.json in ${workspace}. Run the intake wizard (or start) first.`);
+    }
+    const model = await readJsonFile(path.join(workspace, "solution-model.json"));
+    if (!model) {
+      throw new Error(
+        `No solution-model.json in ${workspace}. First run: npm run reimagine -- init --name "${intake.pilotName}" --source new-concept --output ${workspace}`
+      );
+    }
+    const scaffolded = scaffoldPlan(intake as unknown as IntakePayload, model);
+    await writeFile(path.join(workspace, "solution-model.json"), `${JSON.stringify(scaffolded, null, 2)}\n`, "utf8");
+    const validation = await validateWorkspace(workspace);
+    if (!validation.valid) {
+      throw new Error(`Scaffolded model failed validation:\n${validation.errors.join("\n")}`);
+    }
+    console.log(
+      `Seeded a valid draft plan into ${path.join(workspace, "solution-model.json")} ` +
+        "(owner-confirmation evidence + target-surface decision). " +
+        "Extend components/featureOpportunities in plan mode, citing evidence:intake-brief."
+    );
     return;
   }
 

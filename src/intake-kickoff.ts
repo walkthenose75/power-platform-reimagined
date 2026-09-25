@@ -131,8 +131,8 @@ function orderedSteps(slug: string, intake: IntakePayload, ingested: boolean): s
   if (intake.entryMode === "new-concept") {
     return [
       "1. Load the `reimagine-power-platform` skill.",
-      `2. Scaffold the workspace (seeds \`solution-model.json\` + directories):\n\n   \`\`\`powershell\n   npm run reimagine -- init --name "${intake.pilotName}" --source new-concept --output workspaces/${slug}\n   \`\`\``,
-      "3. Read `intake.json` (problem, target users, target); treat `solution-model.json` as the source of truth to populate.",
+      `2. Scaffold the workspace (seeds \`solution-model.json\` + directories):\n\n   \`\`\`powershell\n   npm run reimagine -- init --name "${intake.pilotName}" --source new-concept --output workspaces/${slug}\n   npm run reimagine -- plan-scaffold --workspace workspaces/${slug}\n   \`\`\`\n   (\`plan-scaffold\` seeds a **valid** draft target model — an owner-confirmation evidence entry + the target-surface decision — so plan mode starts from correct shapes, not a blank evidence-centric schema.)`,
+      "3. Read `intake.json` (problem, target users, target); treat `solution-model.json` as the source of truth to populate. Cite `evidence:intake-brief` on greenfield components/decisions/features.",
       "4. **Enter plan mode.** With the operator, complete the plan — capabilities and scenarios, the Dataverse data model, and integrations. Get the operator's approval before building.",
       `5. Before building, **establish the sign-ins** — you run it; the operator only completes the browser prompts: \`./scripts/connect.ps1 -IntakePath workspaces/${slug}/intake.json\`, then \`./scripts/preflight.ps1 -IntakePath workspaces/${slug}/intake.json\` and clear every FAIL.`,
       "6. On approval, build it in a named unmanaged solution and follow `docs/REIMAGINE_PROCESS.md` from Phase 4, stopping at each approval gate."
