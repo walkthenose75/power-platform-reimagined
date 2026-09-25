@@ -97,14 +97,31 @@ export const MANUAL_STEP_CATALOG: ManualStepCatalogItem[] = [
     appliesWhen: hasTeams
   },
   {
+    id: "add-agent-mcp-tool",
+    title: "Add the Dataverse MCP tool to the agent (one-time consent)",
+    category: "agents",
+    why: "Grounding the agent on live Dataverse data rides on a Power Platform connector, so the connection needs interactive OAuth consent. The agent's identity + instructions are built as code; only this connection is manual. The Dataverse MCP server is on by default for the Copilot Studio client, so it's ~2 clicks + one sign-in.",
+    where: "copilotstudio.microsoft.com → <agent> → Tools → + Add tool → Model Context Protocol → Dataverse MCP Server",
+    steps: [
+      "Open the agent in Copilot Studio and go to the Tools section.",
+      "Select + Add tool → Model Context Protocol → Dataverse MCP Server.",
+      "If prompted, create/authorize the Dataverse connection (one-time sign-in consent).",
+      "Select Add to agent. (Optional: … → Edit next to the tool to scope which tables/tools are exposed.)",
+      "Test in the agent's chat pane, e.g. 'describe the <table>' / 'what needs attention right now?'.",
+      "See AGENT_BUILD.md for the full walkthrough + grounded test prompts."
+    ],
+    appliesWhen: hasAgents
+  },
+  {
     id: "publish-agent",
     title: "Publish the Copilot Studio agent and enable its channels",
     category: "agents",
     why: "Publishing and enabling channels (Teams, Microsoft 365 Copilot) is a Copilot Studio UI flow. In the GitHub Copilot harness there is no background publish; drive it interactively.",
     where: "copilotstudio.microsoft.com → <agent> → Publish; then Channels / Settings",
     steps: [
-      "Open the agent in Copilot Studio and click Publish.",
+      "Open the agent in Copilot Studio and click Publish. (If built as code, the kit already published it — re-publish after any change.)",
       "Enable the channel(s) you need — Microsoft Teams and/or Microsoft 365 Copilot.",
+      "To embed the agent in the code app, enable a Custom website channel, copy its embed URL, set the app's VITE_AGENT_EMBED_URL build variable, and redeploy (see AGENT_BUILD.md).",
       "Submit for admin approval if prompted."
     ],
     automatableInStandardHarness: true,
@@ -183,6 +200,12 @@ export function renderManualGuide(
   if (isGitHubHarness) {
     lines.push(
       "> You are using the **GitHub Copilot harness** (single-agent, interactive). Steps marked *(Standard harness can automate)* would be automated by the full harness but are manual here."
+    );
+    lines.push("");
+  }
+  if (hasAgents(intake)) {
+    lines.push(
+      "> **Agents:** the agent's identity, instructions, and model are built **as code** and published by the kit. The agent steps below are the one-time UI/consent last mile — see **`AGENT_BUILD.md`** for the full build + finish walkthrough (Dataverse MCP tool, test prompts, publish, embed)."
     );
     lines.push("");
   }

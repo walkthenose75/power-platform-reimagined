@@ -24,17 +24,21 @@ test("Teams packaging adds the CSP step; disabling it removes the step", () => {
   assert.ok(!selectManualSteps(noTeams).some((s) => s.id === "teams-csp"));
 });
 
-test("agents add publish + app-registration; an M365 agent adds admin approval", () => {
+test("agents add the MCP tool + publish + app-registration; an M365 agent adds admin approval", () => {
   const withAgent: IntakePayload = {
     ...base,
     target: { ...base.target, agents: { copilotStudio: true, m365Copilot: true, harness: "github-copilot" } }
   };
   const ids = selectManualSteps(withAgent).map((s) => s.id);
+  assert.ok(ids.includes("add-agent-mcp-tool"));
   assert.ok(ids.includes("publish-agent"));
   assert.ok(ids.includes("app-registration"));
   assert.ok(ids.includes("approve-m365-agent"));
+  // MCP tool consent comes before publish in the developer's order.
+  assert.ok(ids.indexOf("add-agent-mcp-tool") < ids.indexOf("publish-agent"));
 
   const noAgent = selectManualSteps(base).map((s) => s.id);
+  assert.ok(!noAgent.includes("add-agent-mcp-tool"));
   assert.ok(!noAgent.includes("publish-agent"));
   assert.ok(!noAgent.includes("approve-m365-agent"));
 });
@@ -50,6 +54,8 @@ test("guide notes the GitHub Copilot harness and includes recorded steps", () =>
   assert.match(guide, /# Manual steps — Inventory Tracking/);
   assert.match(guide, /GitHub Copilot harness/);
   assert.match(guide, /Standard harness can automate/);
+  assert.match(guide, /Add the Dataverse MCP tool to the agent/);
+  assert.match(guide, /AGENT_BUILD\.md/);
   assert.match(guide, /Publish the Copilot Studio agent/);
   assert.match(guide, /Approve the agent for Microsoft 365 Copilot/);
   assert.match(guide, /Recorded during the build/);
