@@ -153,7 +153,7 @@ export function agentsBrief(intake: IntakePayload): string {
   ].join("\n");
 }
 
-function buildConventions(intake: IntakePayload): string {
+function buildConventions(slug: string, intake: IntakePayload): string {
   const custom = intake.target?.uiSystem === "custom";
   const uiLine = custom
     ? "Custom / bespoke design system, per intake — Fluent 2 is not required."
@@ -162,6 +162,7 @@ function buildConventions(intake: IntakePayload): string {
 
 ## Build conventions
 
+- **Readiness gate (before any tenant mutation):** run \`./scripts/preflight.ps1 -IntakePath workspaces/${slug}/intake.json\` and clear every FAIL (source auth, code-apps enablement, Power Apps license).
 - **UI system:** ${uiLine}
 - **Recommended models:** drive the build with the strongest agentic **coding** model available (Claude Sonnet-class); use a high-**reasoning** model (GPT-5 / o-series) for the architecture and plan-mode gates. Pick the strongest your harness offers.`;
 }
@@ -189,6 +190,6 @@ Intake complete. No environment mutation has been authorized.
 
 ## Copilot — do these in order
 
-${orderedSteps(slug, intake, ingested)}${buildConventions(intake)}
+${orderedSteps(slug, intake, ingested)}${buildConventions(slug, intake)}
 `;
 }

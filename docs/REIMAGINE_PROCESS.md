@@ -65,8 +65,11 @@ largely hands-off; 8 is ongoing. Total hands-on decision time: ~15–20 minutes.
 - **You do:** Complete up to two browser sign-ins (`pac`, `az`). If code apps are off, flip one
   admin toggle. Confirm a Premium license for end users.
 - **The kit does:** Preflights everything that stalls builds — tool versions (Node/Git/pac/az),
-  auth pointed at the right tenant, **code apps enabled** on the target env, your maker role, and
-  publish credentials. Returns a green light or a short punch list with exact fixes.
+  auth pointed at the right tenant, **source readiness** (tenant sign-in + the solution exists /
+  repo+revision reachable / uploaded ZIP present), **code apps enabled** on the target env, your
+  maker role, and a **Power Apps license** probe. One command reads the brief:
+  `./scripts/preflight.ps1 -IntakePath workspaces/<pilot>/intake.json`. Returns a green light or a
+  short punch list with exact fixes.
 - **Gate:** **Readiness gate** — the build won't start until it's green.
 - **You get:** A readiness report; zero mid-build surprises.
 - **Friction removed:** Every blocker we hit on the pilot (code-apps 403, cross-tenant auth,

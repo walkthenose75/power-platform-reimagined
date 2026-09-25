@@ -45,8 +45,13 @@ Before building anything in a tenant, run the **Phase 2 preflight** to confirm r
 auth to the target env, maker role, code-apps feature):
 
 ```powershell
-./scripts/preflight.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com
+./scripts/preflight.ps1 -IntakePath workspaces/<pilot>/intake.json
 ```
+
+This reads the brief and checks the machine, the **target** environment, the **source** (tenant
+auth + solution exists / repo+revision reachable / uploaded ZIP present), and the enablement and
+licensing blockers. Resolve every `FAIL` before building; review the `WARN` checkpoints
+(code-apps enablement is admin-gated and has a propagation delay).
 
 If a workspace does not exist, run one of:
 
