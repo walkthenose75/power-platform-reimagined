@@ -92,6 +92,11 @@ When Copilot Studio or Microsoft 365 Copilot agents are in scope, honor the **ag
 
 Classify assets as solution-owned, referenced, or environment-adjacent. Discover Dataverse, SharePoint, canvas apps, model-driven apps, code apps, flows, Copilot Studio agents, connectors, environment variables, custom connectors, APIs, and dynamic dependencies.
 
+**Capture full table fidelity.** For every Dataverse (or SharePoint) table, record **all** columns
+with their types — including `image`, `file`, choice, and lookup — in the component metadata. The
+reimagined tables must recreate **every** source column; dropping one (e.g., an item image) is a
+regression, not a reimagining. Note any column you deliberately drop as an explicit decision.
+
 Populate `solution-model.json`. Record access failures and unsupported artifacts in `unknowns`; never fill gaps with plausible content.
 
 Stop at the discovery gate with coverage, evidence quality, and blockers.
@@ -135,20 +140,27 @@ Keep baseline behavior separate from net-new functionality. Stop at the feature-
 
 Map each current capability to retain, redesign, replace, consolidate, or retire. Convert canvas behavior into code-app requirements. Evaluate model-driven apps on native fit. Assess each SharePoint list or library before moving it to Dataverse.
 
+**Reimagine means better, not just a CRUD list.** Default the code app to strong UX patterns:
+**master–detail** (a list plus a detail panel that shows every field, including images/files),
+**actionable dashboards** (rows click through to detail and expose primary actions — e.g., a
+low‑stock list where each row can Reorder), and Fluent 2 components (DataGrid with row activation,
+Drawer/Card detail, Image). A flat, read‑mostly table that loses source screens (e.g., an item
+detail screen with an image) is a downgrade. Preserve source screens' intent and raise the bar.
+
 Produce architecture decisions, current-to-target traceability, selected-feature traceability, migration waves, coexistence, rollback, and acceptance criteria. Stop at the architecture gate.
 
 ### 7. Design synthetic data
 
-Create a compact, coherent demo narrative with fictitious personas, relationships, lifecycle states, and purposeful edge cases. Do not derive rows from source content.
+Create a compact, coherent demo narrative with fictitious personas, relationships, lifecycle states, and purposeful edge cases. **Match the intake industry** (`publish.solutionHub.industry`): a Providers pilot gets clinical/medical supplies, not generic office/breakroom items. Do not derive rows from source content.
 
-Generate reviewable CSV files, a manifest conforming to `schemas/synthetic-data-manifest.schema.json`, optional fictitious sample documents, and an import-ready package or loader. Validate integrity and repeatability. Stop at the synthetic-data gate.
+Generate reviewable CSV files (keyed to the **target** schema — Dataverse logical names or a `columnMap`), a manifest conforming to `schemas/synthetic-data-manifest.schema.json`, optional fictitious sample documents, and an import-ready package or loader (`scripts/load-synthetic-data.ps1`). Validate integrity and repeatability. Stop at the synthetic-data gate.
 
 ### 8. Build after mutation approval
 
 Build **solution-first** and keep **everything** in the one named unmanaged solution.
 
 1. **Create the container first:** `scripts/ensure-solution.ps1` (publisher + unmanaged solution).
-2. **Tables/choices:** create with the `MSCRM.SolutionUniqueName=<solution>` header so they land in it. Use `scripts/provision-tables.ps1 -SpecFile <tables.json>` (generic: tables, columns, lookups).
+2. **Tables/choices:** create with the `MSCRM.SolutionUniqueName=<solution>` header so they land in it. Use `scripts/provision-tables.ps1 -SpecFile <tables.json>` (generic: tables, columns, lookups; types include `image`/`file`). **Recreate every source column** captured in discovery — including images/files — so the reimagined app keeps full fidelity.
 3. **Experiences:** implement custom experiences as **code apps** (never target canvas apps);
    retain or redesign approved model-driven experiences. Build the code-app UI with **Fluent UI 2**
    (`@fluentui/react-components` v9) by default — `FluentProvider`, Fluent components and

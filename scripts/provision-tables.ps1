@@ -30,7 +30,7 @@
         ] }
     ]
   }
-  Column types: string, memo, int, decimal, money, boolean, datetime.
+  Column types: string, memo, int, decimal, money, boolean, datetime, image, file.
 #>
 param(
   [Parameter(Mandatory = $true)][string]$EnvironmentUrl,
@@ -62,6 +62,8 @@ function ColumnMeta($c) {
     "money"    { return @{ "@odata.type"="Microsoft.Dynamics.CRM.MoneyAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req; PrecisionSource=2 } }
     "boolean"  { return @{ "@odata.type"="Microsoft.Dynamics.CRM.BooleanAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req; OptionSet=@{ "@odata.type"="Microsoft.Dynamics.CRM.BooleanOptionSetMetadata"; TrueOption=@{ Value=1; Label=(Label "Yes") }; FalseOption=@{ Value=0; Label=(Label "No") } } } }
     "datetime" { return @{ "@odata.type"="Microsoft.Dynamics.CRM.DateTimeAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req; Format="DateAndTime"; DateTimeBehavior=@{ Value="UserLocal" } } }
+    "image"    { return @{ "@odata.type"="Microsoft.Dynamics.CRM.ImageAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req; MaxSizeInKB=10240 } }
+    "file"     { return @{ "@odata.type"="Microsoft.Dynamics.CRM.FileAttributeMetadata"; SchemaName=$sn; DisplayName=(Label $dn); RequiredLevel=$req; MaxSizeInKB=32768 } }
     default    { throw "Unknown column type '$($c.type)' for $sn" }
   }
 }

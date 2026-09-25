@@ -90,6 +90,25 @@ Guidance:
   deprecated Teams "Northstar."
 - Keep components keyboard- and screen-reader-accessible; Fluent's defaults do most of this.
 
+### UX patterns — reimagine = better, not a flat list
+
+A reimagined app should **improve** on the source, and never lose a source screen. Default to:
+
+- **Master–detail.** A list/`DataGrid` plus a **detail** view (`Drawer`/`Dialog`/`Card`) that shows
+  **every** field — including **images** (`<img>` from the Dataverse image column) and files. If the
+  source had an item detail screen with an image, the target must too.
+- **Actionable dashboards.** Dashboard rows **click through** to detail and expose the primary
+  action inline — e.g., a low‑stock list where each row has **Reorder** (bump `onhandcount` / open a
+  reorder flow), not a read‑only table.
+- **Row activation.** Make list rows open detail (`onClick` / DataGrid `onRow*`), and put the top
+  task as a primary `Button`.
+- **Fidelity check.** Before calling the app done, confirm every **source screen** and every
+  **source column** has a target counterpart (or an explicit, recorded decision to drop it).
+
+Rendering a Dataverse **image** column: the generated model exposes the image field; bind it to an
+`<img>` (the SDK returns a data/URL for the image). Include the image column when you provision the
+table (`"type":"image"` in the table spec) — do not drop it.
+
 > Version note: the Virtual Rounding pilot app predates this convention (hand-rolled CSS);
 > new reimaginings default to Fluent 2, and existing apps can be retrofitted.
 

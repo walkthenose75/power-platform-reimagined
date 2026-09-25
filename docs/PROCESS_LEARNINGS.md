@@ -64,6 +64,21 @@ run confirmed and the open items it surfaced:
   `{{ENVIRONMENT_ID}}`, `appId` → null) and re-run `scan` on the bundle before `gh repo create` —
   the export zip is binary (scanner skips it), but the app source is text.
 
+### App quality — reimagine = better, not a downgrade
+
+Reviewing the built Inventory app surfaced three quality rules (now in the SKILL + runbook):
+
+- **Preserve source fidelity — recreate every column.** The source item table had an **image**
+  column; the first target build **dropped it**, so the app had no image and no real detail screen.
+  Discovery must capture **all** columns (incl. `image`/`file`/choice/lookup) and the build must
+  recreate them. `provision-tables.ps1` now supports `image` and `file` types.
+- **Honor the intake industry.** Intake said **Providers** (healthcare) but the synthetic data was
+  generic office/breakroom supplies. Synthetic-data design must match
+  `publish.solutionHub.industry` (Providers → clinical/medical supplies).
+- **Ship better UX, not flat CRUD.** The first app was list + edit/delete with a passive dashboard.
+  Default to **master–detail** (detail panel with the image + all fields) and **actionable
+  dashboards** (click-through + a primary action like **Reorder**). Never lose a source screen.
+
 ## Discovery depth — UNPACK the real packages, not just the docs (CRITICAL)
 
 The single biggest miss on the pilot: I first reconstructed behavior from **README/docs + setup
