@@ -120,7 +120,9 @@ largely hands-off; 8 is ongoing. Total hands-on decision time: ~15–20 minutes.
   plain language. When ready, view the **deployed** app in your tenant.
 - **The kit does:** Runs the local dev server (real data, hot reload); on your OK, **deploys
   (pushes)** the app into the solution and returns a play URL; iterates on your feedback and
-  redeploys.
+  redeploys. Confirms the build against the **acceptance check**
+  (`scripts/acceptance.ps1`) — an `ACCEPTED` verdict means solution-complete, data seeded, app
+  reachable, and publication-clean.
 - **Gate:** **Looks-good gate.**
 - **You get:** A reviewed, working app in your tenant — a private draft, nothing shared yet.
 - **Friction removed:** Preview locally before any push; edit by conversation; deploy is one

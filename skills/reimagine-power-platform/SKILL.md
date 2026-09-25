@@ -168,6 +168,16 @@ Do not create target canvas apps.
 
 Use workload test specialists first. Then import into a clean environment, configure connections and settings, load synthetic data, and run acceptance tests. Verify security, accessibility, failure behavior, teardown, and customization.
 
+Run the **acceptance check** (definition of done) and require an `ACCEPTED` verdict before release:
+
+```powershell
+./scripts/acceptance.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com `
+    -SolutionUnique <Solution> -Prefix <prefix> -AppUrl <play-url> `
+    -PublicationPath workspaces/<pilot>/publication
+```
+
+It verifies solution completeness (tables + app + connection references), a clean gap scan, seeded demo data, app reachability, and a clean publication sanitization scan.
+
 An import failure blocks release.
 
 ### 10. Package and publish

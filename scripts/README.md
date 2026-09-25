@@ -14,6 +14,7 @@ Prereqs: `pac` + `az` installed; `az login --tenant <target-tenant>`; System Cus
 | `ensure-solution.ps1` | **Solution-first:** create the publisher + unmanaged solution. | First mutation step |
 | `add-app-to-solution.ps1` | Add a deployed **code app** to the solution (push doesn't reliably do it). | Right after `pac code push` |
 | `audit-solution.ps1` | **Everything-in-solution audit:** list components (tables, app, flows, connection references) + gap-scan custom tables not in the solution. | After building, before publish |
+| `acceptance.ps1` | **Definition of done:** one verdict (`ACCEPTED` / `NOT ACCEPTED`) — solution complete (tables + app + connection refs), gap scan clean, demo data seeded, app reachable, publication sanitization clean. Pilot-agnostic (`-SolutionUnique`/`-Prefix` or `-IntakePath`). | After building, before publish |
 
 ## Typical build order
 
@@ -36,6 +37,9 @@ pac code push --environment https://<org>.crm.dynamics.com/ --solutionName <Solu
 # 4. connectors -> connection references in the solution (MSCRM.SolutionUniqueName header on the connectionreference)
 # 5. VERIFY everything landed
 ./scripts/audit-solution.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com -SolutionUnique <Solution> -Prefix <prefix>
+
+# 6. DEFINITION OF DONE - one verdict before you call it complete
+./scripts/acceptance.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com -SolutionUnique <Solution> -Prefix <prefix> -AppUrl <play-url>
 ```
 
 ## Notes
