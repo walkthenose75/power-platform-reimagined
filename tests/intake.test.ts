@@ -40,22 +40,26 @@ test("accepts a new-concept intake without a source", async () => {
     pilotName: "Fresh Idea",
     entryMode: "new-concept",
     target: baseTarget,
-    concept: { problem: "Nurses need faster rounding.", users: "Bedside nurses", successCriteria: "Rounds in under 2 minutes" }
+    concept: { problem: "Nurses need faster rounding.", users: "Bedside nurses" }
   };
   const result = await validateObject(intake, "intake.schema.json");
   assert.equal(result.valid, true, result.errors.join("\n"));
 });
 
-test("rejects retired concept fields (capabilities/data/integrations)", async () => {
-  const intake = {
-    schemaVersion: "1.0.0",
-    pilotName: "Fresh Idea",
-    entryMode: "new-concept",
-    target: baseTarget,
-    concept: { problem: "x", capabilities: "should not be captured here" }
-  };
-  const result = await validateObject(intake, "intake.schema.json");
-  assert.equal(result.valid, false);
+test("rejects retired concept fields", async () => {
+  const retired = [
+    { problem: "x", capabilities: "no" },
+    { problem: "x", data: "no" },
+    { problem: "x", integrations: "no" },
+    { problem: "x", successCriteria: "no" }
+  ];
+  for (const concept of retired) {
+    const result = await validateObject(
+      { schemaVersion: "1.0.0", pilotName: "Fresh Idea", entryMode: "new-concept", target: baseTarget, concept },
+      "intake.schema.json"
+    );
+    assert.equal(result.valid, false, `expected invalid for ${JSON.stringify(concept)}`);
+  }
 });
 
 test("new-concept kickoff directs the agent into plan mode", () => {

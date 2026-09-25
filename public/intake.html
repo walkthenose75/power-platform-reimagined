@@ -167,9 +167,7 @@
       <textarea id="c-problem" placeholder="What problem does this solve, and why does it matter?"></textarea>
       <label>Target users</label>
       <input id="c-users" type="text" placeholder="Who uses it? (roles / personas)" />
-      <label>Success criteria</label>
-      <input id="c-success" type="text" placeholder="How will you know it worked?" />
-      <p class="hint">That's enough to start. Capabilities, the data model, and integrations are worked out <b>with the agent in plan mode</b> right after intake — no need to pre-write them here.</p>
+      <p class="hint">That's enough to start. Success criteria, capabilities, the data model, and integrations are worked out <b>with the agent in plan mode</b> right after intake — no need to pre-write them here.</p>
     </div>
     <div class="row">
       <div><label>Synthetic data realism</label>
@@ -344,7 +342,7 @@ function buildPayload(){
   else if(mode==='solution-zip') p.source={ zipPath:uploadedZipPath };
   else if(mode==='tenant') p.source={ environmentUrl:val('srcEnvUrl'), solutionName:val('solutionName') };
   if(mode!=='new-concept' && p.source){ p.source.dependencyBoundary=val('dependencyBoundary'); }
-  if(mode==='new-concept') p.concept={ problem:val('c-problem'), users:val('c-users'), successCriteria:val('c-success') };
+  if(mode==='new-concept') p.concept={ problem:val('c-problem'), users:val('c-users') };
   else p.reimagine={ painPoints:val('painPoints'), keepChangeDrop:val('keepChangeDrop'), featureIdeas:val('featureIdeas') };
   return p;
 }

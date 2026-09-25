@@ -26,8 +26,7 @@
       "additionalProperties": false,
       "properties": {
         "problem": { "type": "string" },
-        "users": { "type": "string" },
-        "successCriteria": { "type": "string" }
+        "users": { "type": "string" }
       }
     },
     "reimagine": {

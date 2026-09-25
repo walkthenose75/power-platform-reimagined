@@ -103,7 +103,7 @@ function orderedSteps(slug: string, intake: IntakePayload, ingested: boolean): s
   if (intake.entryMode === "new-concept") {
     return [
       "1. Load the `reimagine-power-platform` skill.",
-      "2. Read `intake.json` — problem, target users, success criteria, and target.",
+      "2. Read `intake.json` — problem, target users, and target.",
       "3. **Enter plan mode.** With the operator, complete the plan — capabilities and scenarios, the Dataverse data model, and integrations. Get the operator's approval before building.",
       "4. On approval, build it in a named unmanaged solution and follow `docs/REIMAGINE_PROCESS.md` from Phase 4, stopping at each approval gate."
     ].join("\n");

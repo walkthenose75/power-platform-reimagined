@@ -56,12 +56,11 @@ Teams packaging) and the same publication pipeline (unmanaged solution + Solutio
 
 - Problem statement and business value
 - Target users / personas
-- Success/acceptance criteria
 
-The rest of the concept — capabilities and scenarios, the Dataverse data model, and integrations
-— is developed collaboratively with the agent in **plan mode** right after intake, not captured
-as free-text fields up front. `KICKOFF.md` instructs the agent to enter plan mode, complete the
-plan with the operator, and get approval before building.
+The rest of the concept — success criteria, capabilities and scenarios, the Dataverse data model,
+and integrations — is developed collaboratively with the agent in **plan mode** right after
+intake, not captured as free-text fields up front. `KICKOFF.md` instructs the agent to enter plan
+mode, complete the plan with the operator, and get approval before building.
 
 ### Reimagine modes (zip / repo / tenant)
 
