@@ -164,6 +164,13 @@ Build **solution-first** and keep **everything** in the one named unmanaged solu
 
 Do not create target canvas apps.
 
+**Record what you can't automate.** Whenever a step cannot be done programmatically (admin toggle,
+interactive OAuth consent, Copilot Studio publish, tenant admin approval, Entra app registration,
+CSP edit, licensing, sharing, Solution Hub form), do **not** silently skip it — append it to
+`solution-model.json` under `manualSteps` (`{ title, why, where, steps }`). The kit already knows the
+common ones (see the manual-steps catalog); record anything new you hit. In the **GitHub Copilot
+harness**, treat publish and connector-action setup as manual by default.
+
 ### 9. Validate
 
 Use workload test specialists first. Then import into a clean environment, configure connections and settings, load synthetic data, and run acceptance tests. Verify security, accessibility, failure behavior, teardown, and customization.
@@ -191,7 +198,7 @@ npm run reimagine -- package --workspace "workspaces/<pilot>"
 npm run reimagine -- scan --path "workspaces/<pilot>/publication"
 ```
 
-`package` writes `publication/` (the GitHub‑postable asset) and reports Solution City readiness (missing fields are flagged). Any scan finding blocks publication. Require human publication approval, then `gh repo create <name> --public --source . --push`.
+`package` writes `publication/` (the GitHub‑postable asset) and reports Solution City readiness (missing fields are flagged). It also generates **`MANUAL_STEPS.md`** — the UI/admin steps the agent could not automate (enablement, connections, agent publish + approval, Teams CSP, sharing, plus anything recorded in `manualSteps`), tailored to the intake and harness. Regenerate it standalone with `npm run reimagine -- manual-guide --workspace "workspaces/<pilot>"`. Any scan finding blocks publication. Require human publication approval, then `gh repo create <name> --public --source . --push`.
 
 ## Progress & gates (stay on rail — no drift)
 

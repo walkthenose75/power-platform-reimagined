@@ -1,5 +1,7 @@
 import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import type { IntakePayload } from "./intake-kickoff.js";
+import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
 import { scanPath } from "./sanitizer.js";
 import type { ScanFinding } from "./types.js";
 
@@ -65,6 +67,7 @@ ${narrative}
 - \`solution/\` — the unmanaged solution package (Dataverse schema) + code‑app source
 - \`synthetic-data/\` — reviewable, fictitious demo data (CSV) + loader
 - \`docs/\` — architecture, user journeys, and customization notes
+- \`MANUAL_STEPS.md\` — UI/admin steps that can't be automated (enablement, connections, agent publish, …)
 - \`SOLUTION_HUB.md\` / \`solution-hub.json\` — Solution City / Solution Hub submission fields
 
 ## Install (in your own environment)
@@ -73,6 +76,7 @@ ${narrative}
 2. Import the unmanaged solution from \`solution/\` (Dataverse schema).
 3. Deploy the code app from source: \`pac code push --environment <your-env-url> --solutionName <solution>\`.
 4. Load the fictitious demo data from \`synthetic-data/\`.
+5. Complete the UI/admin steps in \`MANUAL_STEPS.md\` (connections, agent publish + approval, Teams CSP, sharing).
 
 ## Demo
 
@@ -166,6 +170,11 @@ export async function packagePublication(workspace: string, options: { outDir?: 
     path.join("docs", "README.md"),
     `# Documentation\n\nArchitecture, current→target traceability, user journeys, demo script, and screenshots go here.\n`
   );
+
+  if (intake?.pilotName) {
+    const recorded = (model?.manualSteps as RecordedManualStep[] | undefined) ?? [];
+    await write("MANUAL_STEPS.md", renderManualGuide(pilotName, intake as unknown as IntakePayload, recorded));
+  }
 
   if (await copyDirIfPresent(path.join(workspace, "synthetic-data", "csv"), path.join(outputDir, "synthetic-data"))) {
     files.push("synthetic-data/");

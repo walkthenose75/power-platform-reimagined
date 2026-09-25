@@ -1,12 +1,22 @@
-import { readdir } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { startFromRepository, startFromZip } from "./intake.js";
+import type { IntakePayload } from "./intake-kickoff.js";
 import { packagePublication, renderPackageReport } from "./package.js";
+import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
 import { scanPath } from "./sanitizer.js";
 import { approveGate, computeStatus, findNewestWorkspace, renderStatus } from "./status.js";
 import type { InitOptions, SourceType } from "./types.js";
 import { validateWorkspace } from "./validation.js";
 import { initializeWorkspace } from "./workspace.js";
+
+async function readJsonFile(file: string): Promise<Record<string, unknown> | null> {
+  try {
+    return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 function valueOf(args: string[], flag: string): string {
   const index = args.indexOf(flag);
@@ -33,6 +43,7 @@ function printUsage(): void {
   reimagine start --name <name> --inbox <directory> --output <directory>
   reimagine init --name <name> --source <tenant|repository|new-concept> --output <directory>
   reimagine validate --workspace <directory>
+  reimagine manual-guide [--workspace <directory>] [--out <file>]   # UI/manual steps the agent can't automate
   reimagine package [--workspace <directory>] [--out <directory>]   # assemble the GitHub/Solution Hub bundle
   reimagine scan --path <directory>`);
 }
@@ -127,6 +138,28 @@ async function main(): Promise<void> {
       await startFromZip({ name, zip: path.join(inbox, zipFiles[0]!), output });
     }
     console.log(`Kickoff complete. Open ${path.resolve(output, "KICKOFF.md")} in Copilot.`);
+    return;
+  }
+
+  if (command === "manual-guide") {
+    const workspace = optionalValueOf(args, "--workspace")
+      ? path.resolve(valueOf(args, "--workspace"))
+      : await findNewestWorkspace();
+    if (!workspace) {
+      throw new Error("No workspace found. Pass --workspace <directory>.");
+    }
+    const intake = (await readJsonFile(path.join(workspace, "intake.json"))) as IntakePayload | null;
+    if (!intake || !intake.pilotName) {
+      throw new Error(`No intake.json in ${workspace}. The manual-steps guide needs the intake brief.`);
+    }
+    const model = await readJsonFile(path.join(workspace, "solution-model.json"));
+    const recorded = (model?.manualSteps as RecordedManualStep[] | undefined) ?? [];
+    const guide = renderManualGuide(intake.pilotName, intake, recorded);
+    const outFile = optionalValueOf(args, "--out")
+      ? path.resolve(valueOf(args, "--out"))
+      : path.join(workspace, "MANUAL_STEPS.md");
+    await writeFile(outFile, guide, "utf8");
+    console.log(`Manual-steps guide written to ${outFile}`);
     return;
   }
 

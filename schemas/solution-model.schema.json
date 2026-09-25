@@ -142,6 +142,20 @@
           "note": { "type": "string" }
         }
       }
+    },
+    "manualSteps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1 },
+          "why": { "type": "string" },
+          "where": { "type": "string" },
+          "steps": { "type": "array", "items": { "type": "string" } }
+        }
+      }
     }
   },
   "$defs": {
