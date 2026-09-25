@@ -31,6 +31,39 @@ agents** + 2 Dataverse tables) — surfaced and drove these fixes:
   **copied**, never disturbed. Preflight accepts either the inbox path or the workspace evidence
   copy.
 
+### Full build proven end-to-end (same pilot, on a tenant)
+
+The Inventory pilot was then built **through all 9 gates** to a published GitHub repo. What that
+run confirmed and the open items it surfaced:
+
+- **Proven:** solution-first container → 2 Dataverse tables (Web API `EntityDefinitions` + a
+  One-to-Many lookup, `MSCRM.SolutionUniqueName` header) → **Fluent UI 2 code app** (`pac code init`
+  + `pac code add-data-source` per table → typed services → `pac code push`) → seed → `audit-solution`
+  → `acceptance` = **ACCEPTED** → `package` (scan-clean, Solution Hub READY) → `gh repo create`.
+- **`PublishAllXml` needs `Content-Type: application/json`** even with an empty body, or it 400s
+  (`0x80060888`). Table/column creates auto-publish metadata, so this is only for UI publish.
+- **Add-app-to-solution is a manual portal step (confirmed again).** After `pac code push`, there
+  is **no `canvasapps` record** queryable by the app id yet, so `AddSolutionComponent` fails
+  `0x80040217`. Add via **Solutions → <solution> → Add existing → App**; then acceptance passes
+  (component type 300). Optional kit tweak: poll/retry for the record with backoff before failing.
+- **OPEN — canonical model is hand-authored.** Discovery writes `behavior-evidence.md` but emits
+  **no** `components/dependencies/evidence` for `solution-model.json`; the agent translates
+  evidence → schema-valid model by hand (easy to trip on the `$defs` shapes). Improvement: have the
+  discovery adapter emit a **draft model fragment** (tables/apps/agents/flows + basic deps +
+  evidence) the agent refines.
+- **OPEN — re-running the wizard for the same pilot resets the workspace.** A fresh submit left
+  only `intake.json` + `KICKOFF.md`, wiping `solution-model.json` / evidence / generated. Warn or
+  confirm on submit when `workspaces/<slug>/solution-model.json` already exists.
+- **OPEN — acceptance play-URL check is a false-negative.** `acceptance.ps1` does a `HEAD` on the
+  play URL, which returns 404 (the player doesn't answer HEAD) though the app is reachable in a
+  browser. Use `GET` allowing redirect/401/403/200, or skip.
+- **Agent + Dataverse MCP are manual/preview.** Enabling the Dataverse MCP Server (preview), adding
+  the MCP tool + connection, publishing, and embedding (Direct Line/token) are all UI/preview steps
+  — captured per pilot in `MANUAL_STEPS.md` via the `manualSteps` mechanism.
+- **Publish safely.** Templatize the code app's `power.config.json` (`environmentId` →
+  `{{ENVIRONMENT_ID}}`, `appId` → null) and re-run `scan` on the bundle before `gh repo create` —
+  the export zip is binary (scanner skips it), but the app source is text.
+
 ## Discovery depth — UNPACK the real packages, not just the docs (CRITICAL)
 
 The single biggest miss on the pilot: I first reconstructed behavior from **README/docs + setup
