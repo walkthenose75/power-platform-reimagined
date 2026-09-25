@@ -1,125 +1,117 @@
-# Session Handoff — Morning Catch‑Up
+# Session Handoff — resume point
 
-_Last updated: end of session 2026‑09‑23 (evening). Session ID: cdb16b3c‑13c1‑4166‑9569‑4b1c4b3f1939._
-
-Read this first in the morning. It's the single source of truth for where we are.
+_Last updated: 2026‑09‑25 (session: kit hardening + Inventory v2 pilot + SharePoint bridge design)._
+Read this first to resume with **zero drift**. It is the single source of truth for where we are.
 
 ## TL;DR
 
-We built the **Power Platform Reimagined** kit **and** used it to reimagine the **Virtual
-Rounding** solution end‑to‑end — from a legacy GitHub repo to a modern **Power Apps code app on
-Dataverse**, deployed to a tenant, and **published as two public GitHub repos**.
+The **Power Platform Reimagined** kit is mature and battle‑tested. This session hardened it
+end‑to‑end, ran a **second full pilot** (Inventory Tracking v2) through all 9 gates to a published,
+**directly importable** GitHub asset, and **empirically proved** the code‑app→solution limitation.
+We then started designing a **SharePoint bridge**; the design for the first capability is locked
+(below) and is the **next thing to build**.
 
-- **Kit (reusable product):** https://github.com/walkthenose75/power-platform-reimagined (public)
-- **Demo (reimagined solution):** https://github.com/walkthenose75/virtual-rounding (public)
-- **Tenant:** Skunkworks POC (`https://orgfd452920.crm.dynamics.com/`), solution **VirtualRounding**
+- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **59 tests
+  green** (`npm run check`), working tree **clean and in sync with origin**.
+- **Demos (public, importable):** `walkthenose75/virtual-rounding`, `walkthenose75/inventory-tracker-go`.
+- **Tenant:** Skunkworks POC `https://orgfd452920.crm.dynamics.com/` (env `db02e4be‑e8d1‑e733‑bbac‑10384a8f4212`,
+  tenant `505fd4e7‑74f6‑4aec‑9c0e‑3ed624c84faf`), active `pac` + `az` as `admin@diax56912972.onmicrosoft.com`.
 
-## What's live
+## ⏭ NEXT TASK (in flight): SharePoint **lists → Dataverse** discovery adapter
 
-### GitHub
-| Repo | Visibility | Contents |
-|---|---|---|
-| `power-platform-reimagined` | public | The kit: intake wizard, schemas, CLI, skill, 8‑phase docs, tests (10/10 green) |
-| `virtual-rounding` | public | The demo: code‑app source, unmanaged solution, synthetic data, Teams package, install/demo/hub docs |
+We're designing a "SharePoint bridge" (read‑only source ingestion, since SharePoint isn't a target
+workload). Three capabilities were scoped; **we chose to build lists→Dataverse first**. Design is
+**LOCKED** — do not re‑litigate, just build:
 
-### Power Platform (Skunkworks POC, tenant `505fd4e7‑…`)
-- **Publisher:** Smartter Health (prefix `sh`)
-- **Unmanaged solution:** `VirtualRounding` (display "Virtual Rounding")
-- **Tables:** `sh_location` → `sh_sublocation` → `sh_room` (in the solution)
-- **Code app:** "Virtual Rounding" (`6765134d‑f22e‑43d8‑9e24‑348f20ef8e82`) — deployed via
-  `pac code push --solutionName VirtualRounding`
-- **Synthetic data:** 2 hospitals (Fabrikam, Contoso), 3 units, 7 rooms — fictitious
-- Play URL: `https://apps.powerapps.com/play/e/db02e4be‑e8d1‑e733‑bbac‑10384a8f4212/app/6765134d‑f22e‑43d8‑9e24‑348f20ef8e82`
+- **Source:** a **LIVE SharePoint site** (not PnP scripts for v1).
+- **Auth:** **Microsoft Graph device‑code sign‑in** (SE signs in; least setup, cross‑platform).
+  Read `GET /sites/{site-id}/lists/{list-id}/columns` (+ `/lists` to enumerate). Scope:
+  `Sites.Read.All` (delegated) — confirm the device‑code client id/consent next session.
+- **Fits the existing pipeline** (no new build machinery): `read list schema` → **type‑map** →
+  emit `tables.json` → **`scripts/provision-tables.ps1`** (already supports string/memo/int/decimal/
+  money/boolean/datetime/**choice**/image/file/lookup) → **synthetic‑data** → build.
+- **Type map (the deterministic core to implement):**
+  Title→**primary name** (string) · Text→string (carry maxLength) · Note→memo · Number→int/decimal ·
+  Currency→money · Choice(single)→**choice** (local option set) · Choice(multi)→multiselect choice ·
+  Yes/No→boolean · Date/DateTime→datetime · **Person/Group→text (display name) or lookup to a
+  synthetic Staff table — NOT real `systemuser`** · **Lookup→Dataverse lookup only if the referenced
+  list is also in scope (create that table first); else flatten to text + log a decision** ·
+  Hyperlink→string(URL) · Picture→image · Managed metadata→choice/string · **Calculated/Rollup→NOT
+  recreated (recompute in app)** · Attachments→file/notes.
+- **Locked defaults:** person→text/synthetic; multi‑value lookups→simplify; **no source rows** (read
+  schema only, generate synthetic data).
+- **To build next session:**
+  1. `scripts/read-sharepoint-list.ps1` — Graph device‑code sign‑in → write list schema JSON
+     (`generated/current-state/sharepoint-<list>.json`).
+  2. `src/sharepoint-map.ts` — map schema → `tables.json` (provision spec) + a **source→target
+     column map** (for synthetic‑data + traceability) + `solution-model.json` table components +
+     a decision + evidence (`kind: api-result` / `owner-confirmation`). Handle lookup ordering,
+     person/lookup defaults, calculated‑skip.
+  3. Wire `reimagine sharepoint-map` CLI + **tests** + a documented mapping table in the SKILL/docs.
+- **Deferred siblings (already scoped, not chosen yet):** (2) SharePoint **docs → agent knowledge**
+  (download → sanitize → ground via the `add-knowledge` skill or upload); (3) **create a demo
+  SharePoint site + upload sanitized knowledge files** for a portable, self‑contained demo.
 
-> **Final evening state (confirmed):** `pac solution publish` → **Published All Customizations**,
-> and `pac code list` → **"Virtual Rounding" app present**. The app push **succeeded**. The
-> data‑count re‑check failed only because the **`az` token had expired** after several hours (it
-> returned a server error page, not a data issue) — the 7 rooms were seeded and confirmed earlier.
-> In the morning, `az login --tenant 505fd4e7‑…` then re‑run the verify block in "How to resume".
+## This session's shipped work (all committed + pushed to the kit)
 
-## The 8‑phase process (all documented in docs/REIMAGINE_PROCESS.md)
+- **Copilot Studio agent as code** (`pac copilot`): `scripts/build-agent.ps1`, `src/agent-build.ts`
+  + `reimagine agent-guide`; audit/acceptance recognize agent component **type 10225**. Verified live
+  (published `inv_InventoryAssistant`, `inv2_InventoryAssistantv2`).
+- **Agent last‑mile surfaced** to developers (MANUAL_STEPS, bundle README, app Assistant tab, status
+  flow): authoritative Dataverse **MCP tool** steps (on by default for the Copilot Studio client),
+  embed via `VITE_AGENT_EMBED_URL`.
+- **New‑developer journey hardened** (no‑drift): SKILL first‑moves are **state‑based** (ingest→
+  connect→preflight), `connect.ps1` is an explicit agent step, `start` gives actionable errors,
+  wizard re‑submit preserves the ingested state.
+- **Plan‑mode bootstrap:** `reimagine plan-scaffold` (seeds valid owner‑confirmation evidence +
+  target decision) + a model‑authoring cheat‑sheet — kills the evidence‑centric‑schema friction.
+- **`provision-tables.ps1` gained `choice`/optionset** columns.
+- **Discovery now extracts Dataverse table columns** from `customizations.xml` (fixes the v1
+  image‑drop root cause).
+- **Turnkey demo data:** the bundle ships the CSVs **+ manifest + self‑contained loader** (+ a
+  data README); `package.ts` copies them for every future bundle.
+- **Self‑sufficient bundle:** complete README (prereqs, clone, correct app‑deploy sequence,
+  one‑command data load, honest docs); `package.ts` now **copies the templatized code‑app source**.
+- **Naming derivation** guidance for new‑concept builds; **`docs/ROADMAP.md`** created (intake
+  context/source files idea).
 
-`1 Envision → 2 Prepare → 3 Deconstruct → 4 Reimagine → 5 Build → 6 Review → 7 Publish → 8 Evolve`
+## Key PROVEN learnings (durable — in `docs/PROCESS_LEARNINGS.md`)
 
-Status against the Virtual Rounding pilot: **Phases 1–7 proven.** Phase 8 (Evolve) is the
-ongoing backlog/roadmap.
+- **Code app → solution requires the maker portal (PROVEN with a probe app, pac 2.12.2).** A code
+  app is a `canvasapp` record (`canvasapptype = 4`), solution component **type 300**, whose
+  `objectid` **is** the `canvasappid`. A freshly `pac code push`ed app has **no canvasapp record**,
+  so `pac code push --solutionName`, the `AddSolutionComponent` Web API, and
+  `pac solution add-solution-component` **all fail** ("CanvasApp … does not exist"). Only the portal
+  **Add existing → App** creates the record. **Dataverse tables/choices/agent still land
+  automatically** via `ensure-solution` + the `MSCRM.SolutionUniqueName` header; `audit-solution.ps1`
+  + `acceptance.ps1` verify/gate everything‑in‑solution. `add-app-to-solution.ps1` now **resolves +
+  verifies** (by `-AppName`/`-AppId`) and adds only when a record already exists.
+- Agent as code is real; `pac copilot publish --bot <schema>` works headlessly; the **Dataverse MCP
+  tool** is the one interactive OAuth step (on by default for the Copilot Studio client).
+- Don't copy a code app's `node_modules` (partial‑copy → clean reinstall needed); `pac code init`
+  refuses if `power.config.json` exists.
 
-## Key learnings (all captured in docs/PROCESS_LEARNINGS.md)
+## Tenant state (as of sign‑off)
 
-1. **Two CLIs.** The `create-code-app` skill assumes the npm `power-apps` CLI; this machine used
-   the **PAC CLI** (`pac code …`). Detect which is present; don't assume.
-2. **Code apps must be enabled per environment** (first push → `403
-   CodeAppOperationNotAllowedInEnvironment`); enablement takes minutes to propagate. This is the
-   #1 preflight.
-3. **Cross‑tenant auth.** Target env was in a different tenant than the default `microsoft.com`
-   account. `pac auth create` + `az login --tenant <target>` were both required.
-4. **Solution naming.** Unique names can't contain spaces and are immutable — use PascalCase
-   unique + friendly display; keep "reimagine" branding out of the deliverable.
-5. **Build everything in the solution.** All Dataverse artifacts go in a named unmanaged
-   solution created up front.
-6. **Code apps are NOT auto-added to the classic solution export** (0 `canvasapps`; `--solutionName`
-   on push didn't associate it). **But** the code app **can be added to the solution manually via
-   the maker portal** (Add existing > App) — the user did this. Verify solution membership after push.
-7. **Teams framing needs a CSP change** — add `https://teams.microsoft.com` +
-   `https://*.teams.microsoft.com` to the App CSP `frame-ancestors`, or the tab renders blank.
-8. **Transient errors → retry:** `pac code push` DNS blips (`ENOTFOUND`/`ENOENT` to
-   `*.powerplatform.com` / blob storage), table‑column `0x80040216` right after table create, and
-   the enablement 403. All cleared on retry/backoff.
-9. **Windows spawn shims.** Preflight had to use `shell:true` on Windows so `az`/`pac` (`.cmd`)
-   resolve.
-10. **Publishing.** `gh` CLI made repo creation trivial (`gh repo create --public --source . --push`);
-    env‑specific IDs in `power.config.json` were templatized before publishing.
+- **Live solutions:** `VirtualRounding` (earlier pilot, intact), `VizientAutomationIntake` (your other
+  project — tables + option sets, all in‑solution).
+- **`InventoryTracking` + `InventoryTrackingV2` and their `inv_`/`inv2_` tables were DELETED** from
+  the tenant at some point (VirtualRounding survived, so the env was **not** reset). **Nothing lost:**
+  the GitHub deliverable `inventory-tracker-go` has the importable managed+unmanaged ZIPs + app source
+  + data — re‑import anytime.
+- Cleaned up this session: the throwaway `AddAppProbe` solution + publisher (deleted); a harmless
+  dummy code app "Add App Probe" (`44b747d3‑…`) remains — delete via portal > Apps if desired.
 
-## Open items / next steps for the morning
-
-- [ ] **Confirm the deployed app renders** with data (open the play URL in the tenant browser
-      profile, or the Teams tab after the CSP change).
-- [ ] **Verify data counts** (locations 2 / sublocations 3 / rooms 7) — see resume block.
-- [ ] **Real Solution Hub submission** — `virtual-rounding/SOLUTION_HUB.md` is drafted with the
-      repo URL; submit via the Solutions Hub form ("Fetch & Fill" from the repo).
-- [ ] **Screenshots** for both READMEs / Solution Hub (app console, rounding grid).
-- [ ] Optional: add `webApplicationInfo` (Entra app reg) for silent Teams SSO.
-- [ ] Optional: extend the intake wizard to pre‑fill from an existing repo and add an env
-      code‑apps‑enabled check once auth is present.
-- [ ] Optional: build the **Phase 7 publish automation** into the kit CLI (wrap
-      `package-repo.ps1` + `gh` + scan into `npm run reimagine -- publish`).
-
-## How to resume (commands)
+## How to resume
 
 ```powershell
-# from the kit root
-cd c:\VSCodeProjects\power-platform-reimagined
-
-# 1. confirm tenant auth (active profile should be VirtualRoundingTarget / Skunkworks POC)
-pac auth list
-
-# 2. rebuild + redeploy the app if you changed it
-cd workspaces\virtual-rounding\solution\virtual-rounding-app
-npm install ; npm run build
-pac code push --environment https://orgfd452920.crm.dynamics.com/ --solutionName VirtualRounding
-
-# 3. verify data (needs: az login --tenant 505fd4e7-74f6-4aec-9c0e-3ed624c84faf)
-$envUrl="https://orgfd452920.crm.dynamics.com"; $token=az account get-access-token --resource $envUrl --query accessToken -o tsv
-$h=@{Authorization="Bearer $token"; "OData-Version"="4.0"}
-foreach($t in 'sh_locations','sh_sublocations','sh_rooms'){ (Invoke-RestMethod "$envUrl/api/data/v9.2/$t?`$count=true&`$top=0" -Headers $h).'@odata.count' }
-
-# 4. local preview of the app (live data)
-npm run dev    # open the printed "Local Play" URL in the tenant browser profile
-
-# 5. run the intake wizard (kit front door)
-cd c:\VSCodeProjects\power-platform-reimagined ; npm run intake
+cd C:\VSCodeProjects\power-platform-reimagined
+git pull                      # ensure latest
+npm run check                 # 59 tests should be green
+pac auth list ; az account show   # confirm Skunkworks POC / tenant 505fd4e7…
+# if tokens expired: pac auth create --environment https://orgfd452920.crm.dynamics.com/ ; az login --tenant 505fd4e7-74f6-4aec-9c0e-3ed624c84faf
+npm run status                # kit's "where am I / next" (per workspace)
 ```
 
-## Repo scripts (in workspaces/virtual-rounding/solution/, gitignored from the kit)
-
-- `provision-dataverse.ps1` — publisher + unmanaged solution + tables (idempotent)
-- `rename-solution.ps1` — clean solution name + move components
-- `seed-synthetic-data.ps1` — fictitious demo data (idempotent)
-- `teams/build-teams-package.ps1` — Teams personal‑tab package
-- `package-repo.ps1` — assemble the publishable demo repo
-
-## Background processes at sign‑off
-
-The intake wizard (`npm run intake`, port 5171) and the VR app dev server (`npm run dev`) and the
-final verify command were running. They are being **stopped** at end of session — restart with
-the commands above.
+Then start the **SharePoint lists→Dataverse adapter** per the locked design above. Session findings
+are also tracked in the session DB tables `v2_findings`, `dx_findings`, `pilot_findings`, and `todos`.
