@@ -171,6 +171,33 @@ that didn't actually do anything**. Fix: **download, unpack, and analyze the act
 - **Now automated:** `scripts/analyze-artifacts.ps1` performs this extraction (unpacks every
   `.msapp` to Power Fx, summarizes every flow `definition.json` incl. embedded ones) and writes
   `behavior-evidence.md`. Validated on the pilot: 2 canvas apps + 5 flow definitions extracted.
+- **Discovery now extracts Dataverse table columns too (fixes the v1 image-drop root cause).**
+  The adapter previously captured canvas behavior + flows + agent inventory but **not** the table
+  schema, so the agent had to hand-unpack `customizations.xml` — and v1 dropped the item **image**
+  column as a result. `analyze-artifacts.ps1` now parses `customizations.xml` and emits a
+  **Dataverse tables** section listing every custom column + type (image/choice/lookup/money/…),
+  with a "recreate every column" reminder. Verified on the Inventory v2 run: it surfaced
+  `crddd_Image (image/jpeg)` and all columns.
+
+## Second full run — Inventory v2 (same source, hardened kit, live)
+
+Re-ran `InventoryAppAgent_1_0_0_2.zip` as a fresh workspace + solution (`InventoryTrackingV2`,
+prefix `inv2`) end-to-end on the tenant. Confirmations and roadblocks:
+
+- **Regressions fixed vs v1:** the **image column** was recreated live (`inv2_Image` →
+  `provision-tables.ps1` image type works end-to-end), the code app now has an **item detail view
+  (with image) + actionable reorder dashboard** (rows click through, Reorder writes on-hand), and
+  the synthetic data is **industry-appropriate** (Providers clinical supplies, not office snacks).
+  The agent-as-code flow ran cleanly a **second time** (import + `pac copilot publish`).
+- **Hard roadblock (unchanged): code app → solution needs the portal.** After `pac code push` there
+  is **no `canvasapps` record** until the app is added to the solution via the maker portal
+  (Solutions → Add existing → App); `add-app-to-solution.ps1` 400s `0x80040217`, and the record was
+  still absent 10+ min later. This is the one acceptance blocker and cannot be automated headlessly.
+- **Scaffold-reuse friction:** copying a code-app dir's `node_modules` left it partial and
+  `npm install` said "up to date" while `tsc` still failed — a **clean reinstall** was needed; and
+  `pac code init` refuses if `power.config.json` exists. Don't copy `node_modules`; a "clone code
+  app for a new table set" helper (fresh scaffold + repoint data sources + reset `power.config.json`)
+  would remove this. `pac code init` also prints a harmless libuv assertion but succeeds.
 
 ## Intake
 

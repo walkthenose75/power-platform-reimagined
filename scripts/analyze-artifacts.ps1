@@ -83,6 +83,41 @@ foreach ($m in $msapps) {
   $out.Add("")
 }
 
+# --- Dataverse tables (schema from solution customizations.xml) ---
+$out.Add("## Dataverse tables")
+$custFiles = @()
+foreach ($root in $scanRoots) { $custFiles += Get-ChildItem -Recurse -Path $root -Filter customizations.xml -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName } }
+$custFiles = $custFiles | Sort-Object -Unique
+$tableCount = 0
+foreach ($cf in $custFiles) {
+  try { [xml]$cx = Get-Content -Raw -Path $cf -ErrorAction Stop } catch { continue }
+  foreach ($ent in $cx.SelectNodes('//Entity')) {
+    $nameNode = $ent.SelectSingleNode('Name')
+    if (-not $nameNode) { continue }
+    $ename = $nameNode.InnerText.Trim()
+    if (-not $ename) { continue }
+    $prefix = (($ename -split '_')[0]).ToLower()
+    $cols = @()
+    foreach ($a in $ent.SelectNodes('.//attribute')) {
+      $pn = $a.GetAttribute('PhysicalName')
+      if (-not $pn) { continue }
+      if (-not $pn.ToLower().StartsWith($prefix + '_')) { continue }
+      $tn = $a.SelectSingleNode('Type'); $t = if ($tn) { $tn.InnerText.Trim() } else { '?' }
+      $fn = $a.SelectSingleNode('Format'); $fmt = if ($fn) { $fn.InnerText.Trim() } else { '' }
+      $desc = if ($fmt -and @('none', '') -notcontains $fmt) { "$t/$fmt" } else { $t }
+      $cols += "$pn ($desc)"
+    }
+    if ($cols.Count -gt 0) {
+      $tableCount++
+      $out.Add("### $ename")
+      foreach ($c in ($cols | Sort-Object -Unique)) { $out.Add("- $c") }
+      $out.Add("**Recreate every column above in the target** (including image/file/choice/lookup) — dropping one is a regression, not a reimagining.")
+      $out.Add("")
+    }
+  }
+}
+if ($tableCount -eq 0) { $out.Add("_No solution customizations.xml with custom tables found (columns may be defined elsewhere)._"); $out.Add("") }
+
 # --- Copilot Studio agents (bots) ---
 $out.Add("## Copilot Studio agents")
 if (-not $bots) { $out.Add("_None found._"); $out.Add("") }
@@ -139,4 +174,4 @@ foreach ($f in $defs) {
 Set-Content -Path $OutFile -Value ($out -join "`r`n") -Encoding UTF8
 Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 Write-Host "[OK] behavior evidence -> $OutFile" -ForegroundColor Green
-Write-Host "     Canvas apps: $($msapps.Count)   Copilot Studio agents: $($bots.Count)   Flow definitions: $($defs.Count)" -ForegroundColor DarkGray
+Write-Host "     Canvas apps: $($msapps.Count)   Dataverse tables: $tableCount   Copilot Studio agents: $($bots.Count)   Flow definitions: $($defs.Count)" -ForegroundColor DarkGray
