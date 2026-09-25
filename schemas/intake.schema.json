@@ -51,7 +51,15 @@
         "environmentUrl": { "type": "string" },
         "signInAccount": { "type": "string" },
         "teamsPackaging": { "type": "boolean" },
-        "modelDrivenPolicy": { "enum": ["case-by-case", "replace"] }
+        "agents": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "copilotStudio": { "type": "boolean" },
+            "m365Copilot": { "type": "boolean" },
+            "harness": { "enum": ["standard", "github-copilot"] }
+          }
+        }
       }
     },
     "synthetic": {
@@ -103,6 +111,40 @@
     {
       "if": { "properties": { "entryMode": { "const": "tenant" } } },
       "then": { "properties": { "source": { "required": ["solutionName"] } }, "required": ["source"] }
+    },
+    {
+      "if": {
+        "required": ["target"],
+        "properties": {
+          "target": {
+            "required": ["agents"],
+            "properties": {
+              "agents": {
+                "required": ["copilotStudio"],
+                "properties": { "copilotStudio": { "const": true } }
+              }
+            }
+          }
+        }
+      },
+      "then": { "properties": { "target": { "properties": { "agents": { "required": ["harness"] } } } } }
+    },
+    {
+      "if": {
+        "required": ["target"],
+        "properties": {
+          "target": {
+            "required": ["agents"],
+            "properties": {
+              "agents": {
+                "required": ["m365Copilot"],
+                "properties": { "m365Copilot": { "const": true } }
+              }
+            }
+          }
+        }
+      },
+      "then": { "properties": { "target": { "properties": { "agents": { "required": ["harness"] } } } } }
     }
   ]
 }

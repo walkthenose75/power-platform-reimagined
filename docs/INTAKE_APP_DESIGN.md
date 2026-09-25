@@ -42,7 +42,8 @@ Teams packaging) and the same publication pipeline (unmanaged solution + Solutio
 - Pilot / solution name
 - Target environment URL (+ optional GUID) and sign-in account/tenant
 - Target surface: code app; Teams packaging (yes/no)
-- Model-driven apps: retain case-by-case / replace
+- Conversational agents: whether Copilot Studio and/or Microsoft 365 Copilot (declarative) agents
+  are in scope, and — when either is — the **agent authoring harness** (Standard vs GitHub Copilot)
 - Synthetic data: realism level + volume
 - Sanitization confirmations (synthetic-only; scrub identifiers/secrets)
 - Solution HUB metadata: title, industry, content types, technical areas, contributors, narrative
@@ -93,12 +94,27 @@ pilot, runs machine preflight, and supports all four entry modes. Validated agai
 Rounding pilot. Future: pre-fill from an existing repo, and richer preflight (env code-apps
 enablement check once auth is present).
 
-## Backlog (v2, from user feedback)
+## Intake v2
 
-- **`.zip` browse button (Step 2 Source):** replace the free-text path with a file browse button;
-  on Next, copy the chosen `.zip` into the working directory (`inbox/`) and unzip, then continue.
-  Browsers can't move a local file by path — receive the uploaded file server-side and write it,
-  or integrate a VS Code file picker.
-- **Explain "Dependency boundary" (Step 2):** add plain-language help under each option
-  (full closure = solution + all dependencies; directly referenced = one hop; solution-owned =
-  packaged components only).
+- **`.zip` browse button (Step 2 Source):** implemented. The browser uploads the selected ZIP to
+  the local intake server, which validates it, writes it to `inbox/<pilot>/`, and unpacks it with
+  PAC CLI before the wizard proceeds. Uploads are limited to 100 MB; failures remove partial
+  upload and unpack artifacts.
+- **Explain "Dependency boundary" (Step 2):** implemented with plain-language labels and
+  descriptions — "Everything it depends on", "Solution + one hop out", and "Only what's inside
+  the solution" (values `full-closure` / `referenced-only` / `solution-owned`).
+- **Conversational agents + harness (Step 3 Target):** when the solution includes Copilot Studio
+  and/or Microsoft 365 Copilot (declarative) agents, the wizard asks which **authoring harness**
+  to use. The choice is validated (harness required when an agent type is in scope) and written
+  into `KICKOFF.md` so the workflow honors the harness's capabilities:
+  - *Standard harness* — full Copilot Studio skill set: multi-agent authoring (Advisor, Author,
+    Manage, Test), clone/pull/push/publish, and background evaluation and chat testing.
+  - *GitHub Copilot harness* — single-agent and interactive: no autonomous sub-agents or
+    background runs; publish and batch evaluation are manual, operator-confirmed steps.
+- **Model-driven apps removed from Step 3 Target:** the target surface is always a code app, so
+  the wizard no longer asks for a model-driven policy. Model-driven apps are still discovered as
+  source evidence and evaluated case by case during the workflow — that is not an intake choice.
+- **Teams personal tab kept with a tooltip:** the "Package as a Microsoft Teams personal tab"
+  toggle stays, now with a hover/focus tooltip explaining that it also builds a Teams app package
+  (manifest + icons) embedding the code app as a personal tab, and noting the CSP
+  `frame-ancestors` requirement.

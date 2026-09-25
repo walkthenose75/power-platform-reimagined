@@ -12,4 +12,4 @@ workspaces/
 
 # Keep distributable examples fictitious and reviewed.
 artifacts/private/
-inbox/*.zip
+inbox/

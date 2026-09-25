@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { assertSolutionZip, sanitizeZipFileName, storeSolutionZip } from "../src/intake-upload.js";
+import { agentsBrief, kickoff, nextCommand } from "../src/intake-kickoff.js";
 import { runPreflight } from "../src/preflight.js";
 import { validateObject } from "../src/validation.js";
 
-const baseTarget = { surface: "code-app", teamsPackaging: true, modelDrivenPolicy: "case-by-case" };
+const baseTarget = { surface: "code-app", teamsPackaging: true };
 
 test("accepts a valid repository intake", async () => {
   const intake = {
@@ -41,6 +46,50 @@ test("accepts a new-concept intake without a source", async () => {
   assert.equal(result.valid, true, result.errors.join("\n"));
 });
 
+test("requires an agent harness when Copilot Studio is in scope", async () => {
+  const intake = {
+    schemaVersion: "1.0.0",
+    pilotName: "Agent Solution",
+    entryMode: "new-concept",
+    target: { ...baseTarget, agents: { copilotStudio: true } }
+  };
+  const result = await validateObject(intake, "intake.schema.json");
+  assert.equal(result.valid, false);
+});
+
+test("requires an agent harness when an M365 Copilot agent is in scope", async () => {
+  const intake = {
+    schemaVersion: "1.0.0",
+    pilotName: "Declarative Agent",
+    entryMode: "new-concept",
+    target: { ...baseTarget, agents: { m365Copilot: true } }
+  };
+  const result = await validateObject(intake, "intake.schema.json");
+  assert.equal(result.valid, false);
+});
+
+test("accepts an agent scope that names a harness", async () => {
+  const intake = {
+    schemaVersion: "1.0.0",
+    pilotName: "Agent Solution",
+    entryMode: "new-concept",
+    target: { ...baseTarget, agents: { copilotStudio: true, m365Copilot: false, harness: "github-copilot" } }
+  };
+  const result = await validateObject(intake, "intake.schema.json");
+  assert.equal(result.valid, true, result.errors.join("\n"));
+});
+
+test("accepts a target with no agents block", async () => {
+  const intake = {
+    schemaVersion: "1.0.0",
+    pilotName: "No Agents",
+    entryMode: "new-concept",
+    target: baseTarget
+  };
+  const result = await validateObject(intake, "intake.schema.json");
+  assert.equal(result.valid, true, result.errors.join("\n"));
+});
+
 test("rejects an unknown industry value", async () => {
   const intake = {
     schemaVersion: "1.0.0",
@@ -64,4 +113,74 @@ test("preflight returns the expected checks", async () => {
   const names = checks.map((c) => c.name);
   assert.ok(names.some((n) => n.includes("Node")));
   assert.ok(names.some((n) => n.includes("pac")));
+});
+
+test("sanitizes an uploaded ZIP filename", () => {
+  assert.equal(sanitizeZipFileName("C%3A%5CDownloads%5CFabrikam%20Care.zip"), "Fabrikam-Care.zip");
+  assert.throws(() => sanitizeZipFileName("solution.exe"), /\.zip file/);
+});
+
+test("rejects content that is not a ZIP archive", () => {
+  assert.throws(() => assertSolutionZip(Buffer.from("not a zip")), /not a valid ZIP/);
+});
+
+test("stores and unpacks an uploaded solution ZIP", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "reimagine-intake-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  let unpackedFrom = "";
+  let unpackedTo = "";
+  const result = await storeSolutionZip({
+    pilotSlug: "fabrikam-care",
+    originalName: "Fabrikam Care.zip",
+    content: Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+    inboxRoot: root,
+    unpack: async (zipPath, outputPath) => {
+      unpackedFrom = zipPath;
+      unpackedTo = outputPath;
+    }
+  });
+
+  assert.equal(await readFile(unpackedFrom, "hex"), "504b0304");
+  assert.equal(unpackedTo, path.join(root, "fabrikam-care", "unpacked"));
+  assert.match(result.zipPath, /fabrikam-care\/Fabrikam-Care\.zip$/);
+  assert.match(result.unpackedPath, /fabrikam-care\/unpacked$/);
+});
+
+test("kickoff omits the agents section when no agents are in scope", () => {
+  const brief = kickoff("no-agents", {
+    pilotName: "No Agents",
+    entryMode: "new-concept"
+  });
+  assert.equal(brief.includes("## Conversational agents"), false);
+});
+
+test("kickoff records the Standard harness for Copilot Studio scope", () => {
+  const brief = kickoff("agentic", {
+    pilotName: "Agentic",
+    entryMode: "new-concept",
+    target: { agents: { copilotStudio: true, harness: "standard" } }
+  });
+  assert.match(brief, /## Conversational agents/);
+  assert.match(brief, /In scope: Copilot Studio agent\(s\)/);
+  assert.match(brief, /Authoring harness: \*\*Standard harness\*\*/);
+  assert.match(brief, /Advisor, Author, Manage, Test/);
+});
+
+test("kickoff constrains the GitHub Copilot harness and lists both agent kinds", () => {
+  const brief = agentsBrief({
+    pilotName: "Agentic",
+    entryMode: "tenant",
+    target: { agents: { copilotStudio: true, m365Copilot: true, harness: "github-copilot" } }
+  });
+  assert.match(brief, /Copilot Studio agent\(s\), Microsoft 365 Copilot \(declarative\) agent\(s\)/);
+  assert.match(brief, /Authoring harness: \*\*GitHub Copilot harness\*\*/);
+  assert.match(brief, /Do not spawn autonomous sub-agents/);
+});
+
+test("nextCommand is null for a new concept and set for a repository", () => {
+  assert.equal(nextCommand("x", { pilotName: "X", entryMode: "new-concept" }), null);
+  assert.match(
+    nextCommand("y", { pilotName: "Y", entryMode: "repository", source: { repository: "https://example.invalid/repo" } }) ?? "",
+    /--repo https:\/\/example\.invalid\/repo/
+  );
 });

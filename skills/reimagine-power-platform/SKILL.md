@@ -77,6 +77,11 @@ Inspect the available specialist agents and skills at execution time. Prefer the
 
 Give each specialist a bounded objective, evidence inputs, output contract, and stop condition. Do not include credentials or source rows. Record specialist provenance and centrally validate every result.
 
+When Copilot Studio or Microsoft 365 Copilot agents are in scope, honor the **agent authoring harness** recorded at intake (`target.agents.harness` in `intake.json`, echoed in `KICKOFF.md`):
+
+- **Standard harness:** the full Copilot Studio skill set is available — multi-agent authoring (Advisor, Author, Manage, Test), clone/pull/push/publish, and background evaluation and chat testing.
+- **GitHub Copilot harness:** single-agent and interactive — do not spawn autonomous sub-agents or background runs; drive the skills as guided prompts and treat publish and batch evaluation as manual, operator-confirmed steps.
+
 ### 3. Discover the dependency closure
 
 Classify assets as solution-owned, referenced, or environment-adjacent. Discover Dataverse, SharePoint, canvas apps, model-driven apps, code apps, flows, Copilot Studio agents, connectors, environment variables, custom connectors, APIs, and dynamic dependencies.
