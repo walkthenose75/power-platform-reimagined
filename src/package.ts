@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { IntakePayload } from "./intake-kickoff.js";
@@ -58,44 +58,123 @@ function computeHub(intake: Record<string, unknown> | null, pilotName: string): 
   return { manifest, readiness: { ready: missing.length === 0, present: [...present], missing: [...missing] } };
 }
 
-function renderReadme(pilotName: string, source: string, hub: Record<string, unknown>, hasAgents = false): string {
+function renderReadme(
+  pilotName: string,
+  source: string,
+  hub: Record<string, unknown>,
+  opts: { hasAgents?: boolean; appDir?: string } = {}
+): string {
+  const hasAgents = opts.hasAgents ?? false;
+  const appDir = opts.appDir ?? "solution/<app>";
+  const repo = (hub.githubRepoUrl as string) || "<this-repo-url>";
+  const title = (hub.title as string) ?? pilotName;
   const narrative = (hub.narrative as string) || `${pilotName} — a modern, installable Power Platform demo.`;
   const agentInside = hasAgents
     ? "\n- `AGENT_BUILD.md` — the Copilot Studio agent: built **as code**, plus the 2‑click Dataverse MCP consent, publish, and embed"
     : "";
-  const agentInstall = hasAgents
-    ? "\n6. Finish the **Copilot Studio agent** with `AGENT_BUILD.md` — it's built as code and published; add the Dataverse MCP tool (one‑time consent), then set `VITE_AGENT_EMBED_URL` to embed it in the app."
+  const agentStep = hasAgents
+    ? "\n5. **Finish the agent** — follow `AGENT_BUILD.md`: add the Dataverse MCP tool (one‑time consent), publish, then set `VITE_AGENT_EMBED_URL` and redeploy to embed it in the app's Assistant tab."
     : "";
-  return `# ${hub.title ?? pilotName}
+  return `# ${title}
 
 ${narrative}
 
 > Reusable demo asset. Contains no secrets, source records, or tenant-specific identifiers.
 
+## Prerequisites
+
+- A Power Platform environment where you can create solutions, with **Power Apps code apps enabled**
+  (admin: PPAC → Environment → Settings → Product → Features).
+- **Node.js 22+**, the **Power Platform CLI** (\`pac\`), and the **Azure CLI** (\`az\`).
+- Maker access (System Administrator or equivalent) to import a solution and deploy a code app.
+
+## Quick start
+
+\`\`\`powershell
+git clone ${repo}
+cd ${title.replace(/[^\w.-]+/g, "-").toLowerCase()}
+\`\`\`
+
+Then follow **Install** below (~10 minutes).
+
 ## What's inside
 
-- \`solution/\` — the unmanaged solution package (Dataverse schema) + code‑app source
-- \`synthetic-data/\` — reviewable, fictitious demo data (CSV) + loader
-- \`docs/\` — architecture, user journeys, and customization notes
-- \`MANUAL_STEPS.md\` — UI/admin steps that can't be automated (enablement, connections, agent publish, …)${agentInside}
+- \`solution/\` — the importable **solution package(s)** (Dataverse tables${hasAgents ? " + agent" : ""}) **and** the code‑app source (\`${appDir}/\`)
+- \`synthetic-data/\` — reviewable, fictitious demo data (CSV) + a one‑command loader
+- \`MANUAL_STEPS.md\` — UI/admin steps that can't be automated (enablement, connections, sharing, …)${agentInside}
 - \`SOLUTION_HUB.md\` / \`solution-hub.json\` — Solution City / Solution Hub submission fields
+- \`docs/\` — architecture / demo notes (starter you can flesh out)
 
 ## Install (in your own environment)
 
-1. Ensure **Power Apps code apps** are enabled on your target environment.
-2. Import the unmanaged solution from \`solution/\` (Dataverse schema).
-3. Deploy the code app from source: \`pac code push --environment <your-env-url> --solutionName <solution>\`.
-4. Load the fictitious demo data — from \`synthetic-data/\`: \`az login\` then \`./synthetic-data/load-synthetic-data.ps1 -EnvironmentUrl <your-env-url> -ManifestPath ./synthetic-data/manifest.json\` (resolves lookups; see \`synthetic-data/README.md\` for portal/Package Deployer alternatives).
-5. Complete the UI/admin steps in \`MANUAL_STEPS.md\` (connections, agent publish + approval, Teams CSP, sharing).${agentInstall}
+1. **Import the solution.** [make.powerapps.com](https://make.powerapps.com) → **Solutions → Import solution** → pick the \`*_managed.zip\` in \`solution/\` (or \`*_unmanaged.zip\` if you want to customize). This creates the Dataverse tables${hasAgents ? " and the Copilot Studio agent" : ""}.
+2. **Deploy the code app** from source (its \`power.config.json\` is templatized, so init sets your own ids):
+   \`\`\`powershell
+   cd ${appDir}
+   npm install
+   pac code init --environment <your-env-url> --displayName "${title}"
+   pac code push --solutionName <SolutionUniqueName>
+   \`\`\`
+   Then add the app to the solution once in the portal (**Solutions → your solution → Add existing → App**).
+3. **Load the demo data** (resolves lookups automatically):
+   \`\`\`powershell
+   az login
+   ./synthetic-data/load-synthetic-data.ps1 -EnvironmentUrl <your-env-url> -ManifestPath ./synthetic-data/manifest.json
+   \`\`\`
+   (Portal / Package Deployer alternatives are in \`synthetic-data/README.md\`.)
+4. **Complete the UI/admin steps** in \`MANUAL_STEPS.md\` (connections, Teams CSP, sharing).${agentStep}
 
 ## Demo
 
-See \`docs/\` for the demo script and screenshots.
+${narrative} Walk the app's tabs to show it end‑to‑end; drop screenshots and a short script into \`docs/\`.
 
 ## Customize
 
-The code app is built with **Fluent UI 2** (\`@fluentui/react-components\`). Fork, edit, and
-\`pac code push\` to your environment.
+The code app is built with **Fluent UI 2** (\`@fluentui/react-components\`). Fork, edit \`${appDir}/src\`, and \`pac code push\` to your environment.
+`;
+}
+
+function renderSolutionReadme(pilotName: string, appDir: string | null, hasAgents: boolean): string {
+  const app = appDir ?? "the code-app source folder";
+  const appName = appDir ? path.basename(appDir) : "<app>";
+  return `# Solution artifacts — import into your own environment
+
+This folder makes **${pilotName}** installable in Power Platform.
+
+## What's here
+
+- \`*_managed.zip\` — **import this** for a clean managed install (Dataverse tables${hasAgents ? " + the Copilot Studio agent" : ""}).
+- \`*_unmanaged.zip\` — import instead if you want to **customize** the solution.
+- \`${appName}/\` — the **code‑app source** (React + Vite + Fluent UI 2). Code apps aren't packaged inside a classic solution export, so the app ships as source and deploys with \`pac code push\`.
+
+## Install (3 steps)
+
+1. **Import the solution** — [make.powerapps.com](https://make.powerapps.com) → **Solutions → Import solution** → the managed (or unmanaged) zip.
+2. **Deploy the app** — ensure code apps are enabled, then from \`${app}/\`:
+   \`\`\`powershell
+   npm install
+   pac code init --environment <your-env-url> --displayName "${pilotName}"
+   pac code push --solutionName <SolutionUniqueName>
+   \`\`\`
+   Then add the app to the solution once in the portal (**Solutions → your solution → Add existing → App**).
+3. **Load demo data** — see \`../synthetic-data/README.md\`.
+
+> \`${appName}/power.config.json\` is templatized (\`appId: null\`, \`environmentId: {{ENVIRONMENT_ID}}\`); \`pac code init\` sets your own values. No secrets or tenant identifiers.
+`;
+}
+
+function renderDocsReadme(pilotName: string): string {
+  return `# ${pilotName} — documentation
+
+Starter for the demo package's supporting docs. Fill these in as you prepare the demo:
+
+- **Architecture** — target components (Dataverse tables, code app, agent) and how they connect.
+- **Data model** — tables, columns, and relationships (see the solution + \`../synthetic-data/\`).
+- **User journeys** — the key flows the app supports.
+- **Demo script** — a 3–5 minute walkthrough of the app's tabs.
+- **Screenshots** — drop images here and reference them from the demo script.
+
+Install + usage instructions are in the repo root \`README.md\`; UI/admin steps are in \`../MANUAL_STEPS.md\`.
 `;
 }
 
@@ -160,6 +239,50 @@ async function copyFileIfPresent(from: string, to: string): Promise<boolean> {
   }
 }
 
+/**
+ * Copy the code-app source into the bundle so it's self-contained (deployable with `pac code push`).
+ * Finds the app dir under `<workspace>/solution/` (the one with a `power.config.json`), copies it
+ * excluding `node_modules`/`dist`/`.git`, and templatizes `power.config.json` so it carries no
+ * tenant identifiers. Returns the app dir's relative path in the bundle (e.g. `solution/inventory-app`).
+ */
+async function copyCodeAppSource(workspace: string, outputDir: string): Promise<string | null> {
+  const solDir = path.join(workspace, "solution");
+  let entries: string[];
+  try {
+    entries = await readdir(solDir);
+  } catch {
+    return null;
+  }
+  for (const name of entries) {
+    const appDir = path.join(solDir, name);
+    try {
+      await readFile(path.join(appDir, "power.config.json"), "utf8");
+    } catch {
+      continue; // not a code-app dir
+    }
+    const destRel = path.join("solution", name);
+    const dest = path.join(outputDir, destRel);
+    await cp(appDir, dest, {
+      recursive: true,
+      filter: (src) => {
+        const rel = path.relative(appDir, src);
+        return !rel.split(path.sep).some((seg) => seg === "node_modules" || seg === "dist" || seg === ".git");
+      }
+    });
+    try {
+      const cfgPath = path.join(dest, "power.config.json");
+      const cfg = JSON.parse(await readFile(cfgPath, "utf8")) as Record<string, unknown>;
+      cfg.appId = null;
+      cfg.environmentId = "{{ENVIRONMENT_ID}}";
+      await writeFile(cfgPath, `${JSON.stringify(cfg, null, 2)}\n`, "utf8");
+    } catch {
+      /* leave config as-is if it can't be parsed */
+    }
+    return destRel.replaceAll("\\", "/");
+  }
+  return null;
+}
+
 export async function packagePublication(workspace: string, options: { outDir?: string } = {}): Promise<PackageReport> {
   const intake = await readJson(path.join(workspace, "intake.json"));
   const model = await readJson(path.join(workspace, "solution-model.json"));
@@ -182,17 +305,15 @@ export async function packagePublication(workspace: string, options: { outDir?: 
   const agents = (intake as unknown as IntakePayload | null)?.target?.agents;
   const hasAgentsInScope = Boolean(agents && (agents.copilotStudio || agents.m365Copilot));
 
-  await write("README.md", renderReadme(pilotName, source, manifest, hasAgentsInScope));
+  // Copy the code-app source into the bundle (templatized) so it's self-contained + deployable.
+  const appDir = await copyCodeAppSource(workspace, outputDir);
+  if (appDir) files.push(`${appDir}/`);
+
+  await write("README.md", renderReadme(pilotName, source, manifest, { hasAgents: hasAgentsInScope, ...(appDir ? { appDir } : {}) }));
   await write("SOLUTION_HUB.md", renderHubDoc(manifest, readiness));
   await write("solution-hub.json", `${JSON.stringify(manifest, null, 2)}\n`);
-  await write(
-    path.join("solution", "README.md"),
-    `# Solution artifacts\n\nPlace the exported **unmanaged solution** zip and the **code‑app source** here (produced by the build phase). The app is deployed with \`pac code push\`; the solution zip carries the Dataverse schema.\n`
-  );
-  await write(
-    path.join("docs", "README.md"),
-    `# Documentation\n\nArchitecture, current→target traceability, user journeys, demo script, and screenshots go here.\n`
-  );
+  await write(path.join("solution", "README.md"), renderSolutionReadme(pilotName, appDir, hasAgentsInScope));
+  await write(path.join("docs", "README.md"), renderDocsReadme(pilotName));
 
   if (intake?.pilotName) {
     const recorded = (model?.manualSteps as RecordedManualStep[] | undefined) ?? [];
