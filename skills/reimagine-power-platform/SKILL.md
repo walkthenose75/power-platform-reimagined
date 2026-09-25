@@ -41,19 +41,14 @@ Run an evidence-backed, gated workflow from source intake through an installable
 
 ### 1. Kick off intake
 
-Before building anything in a tenant, run the **Phase 2 preflight** to confirm readiness (tools,
-auth to the target env, maker role, code-apps feature):
+The operator's only action is to open `KICKOFF.md` and say **"Reimagine this Power Platform
+solution."** From here **you (the agent) run every command** — the operator only completes
+interactive browser sign-ins and approves the gates. Do these **first moves in order**:
 
-```powershell
-./scripts/preflight.ps1 -IntakePath workspaces/<pilot>/intake.json
-```
-
-This reads the brief and checks the machine, the **target** environment, the **source** (tenant
-auth + solution exists / repo+revision reachable / uploaded ZIP present), and the enablement and
-licensing blockers. Resolve every `FAIL` before building; review the `WARN` checkpoints
-(code-apps enablement is admin-gated and has a propagation delay).
-
-If a workspace does not exist, run one of:
+**a. Ingest the source (if not already).** The intake **wizard creates the workspace with
+`intake.json` + `KICKOFF.md` but does NOT ingest the source** — so a workspace existing does not
+mean it is ready. If `solution-model.json` or `evidence/` is missing, ingest now (this moves the
+inbox ZIP into the workspace, unpacks it, and scaffolds the model):
 
 ```powershell
 npm run reimagine -- start --name "<pilot-name>" --zip "<solution.zip>" --output "workspaces/<pilot>"
@@ -61,7 +56,33 @@ npm run reimagine -- start --name "<pilot-name>" --inbox "<inbox-directory>" --o
 npm run reimagine -- start --name "<pilot-name>" --repo "<repository-url>" --revision "<branch-or-tag>" --output "workspaces/<pilot>"
 ```
 
-Read `KICKOFF.md` and validate the workspace. For a tenant source that has not been exported, run `scripts/export-source-solution.ps1 -IntakePath <workspace>/intake.json` (or the applicable lifecycle specialist) to export and seed it first.
+`KICKOFF.md`'s **"Ingest the source"** block has the exact command with paths already filled in.
+For a tenant source not yet exported, first run
+`scripts/export-source-solution.ps1 -IntakePath <workspace>/intake.json` (or the applicable
+lifecycle specialist). If the workspace is already ingested (the CLI `start` path), skip this.
+
+**b. Establish the sign-ins.** Run the connect helper — it signs `pac` + `az` (and `gh` for
+publishing) into the **target** env. **You run the command; the operator just completes the browser
+prompts** (this is how "the operator never runs a command themselves" holds):
+
+```powershell
+./scripts/connect.ps1 -IntakePath workspaces/<pilot>/intake.json
+```
+
+**c. Run the readiness gate (preflight)** before any tenant mutation (tools, auth to the target
+env, maker role, code-apps feature, license):
+
+```powershell
+./scripts/preflight.ps1 -IntakePath workspaces/<pilot>/intake.json
+```
+
+It checks the machine, the **target** environment, the **source** (tenant auth + solution exists /
+repo+revision reachable / uploaded ZIP present), and the enablement and licensing blockers. Resolve
+every `FAIL` (re-run `connect.ps1` for auth FAILs); review the `WARN` checkpoints (code-apps
+enablement is admin-gated and has a propagation delay).
+
+Then read `KICKOFF.md` and validate the workspace. Intake approval must establish the source, full
+dependency boundary, permitted APIs, owner, and publication intent.
 
 Intake approval must establish the source, full dependency boundary, permitted APIs, owner, and publication intent.
 

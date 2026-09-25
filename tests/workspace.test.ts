@@ -128,6 +128,21 @@ test("refuses to overwrite a non-empty workspace", async () => {
   });
 });
 
+test("an already-ingested workspace gets an actionable 'already ingested' error, not a cryptic one", async () => {
+  await withTempDirectory(async (directory) => {
+    const zip = path.join(directory, "FabrikamCare.zip");
+    const workspace = path.join(directory, "assessment");
+    await writeFile(zip, "fictitious solution package", "utf8");
+    // Simulate a prior successful ingestion (solution-model.json present).
+    await initializeWorkspace({ name: "Fabrikam Care Operations", source: "solution-zip", output: workspace });
+
+    await assert.rejects(
+      startFromZip({ name: "Fabrikam Care Operations", zip, output: workspace }),
+      /already ingested[\s\S]*npm run status/
+    );
+  });
+});
+
 test("rejects broken canonical references", async () => {
   await withTempDirectory(async (directory) => {
     const workspace = path.join(directory, "assessment");

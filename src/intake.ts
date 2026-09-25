@@ -25,7 +25,18 @@ async function assertFreshWorkspace(output: string): Promise<void> {
   try {
     const entries = (await readdir(output)).filter((entry) => !allowed.has(entry));
     if (entries.length > 0) {
-      throw new Error(`Output workspace is not empty: ${output}`);
+      if (entries.includes("solution-model.json")) {
+        throw new Error(
+          `This pilot is already ingested (${output} has solution-model.json). ` +
+            "You don't need `start` again — read KICKOFF.md and proceed (run `npm run status` for the next step). " +
+            "To re-ingest from scratch, delete the folder or use a new --output."
+        );
+      }
+      throw new Error(
+        `Output workspace is not empty: ${output} (has ${entries.slice(0, 6).join(", ")}). ` +
+          "`start` needs an empty workspace, or just the wizard's intake.json + KICKOFF.md. " +
+          "Use a new --output or clear the folder before ingesting."
+      );
     }
   } catch (error: unknown) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {

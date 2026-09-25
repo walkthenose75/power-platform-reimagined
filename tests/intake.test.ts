@@ -82,6 +82,7 @@ test("source-mode kickoff instructs the agent to ingest and the operator to open
   assert.match(brief, /Ingest the source into this workspace/);
   assert.match(brief, /--repo https:\/\/example\.invalid\/repo/);
   assert.match(brief, /boundary: Everything it depends on/);
+  assert.match(brief, /connect\.ps1/);
   assert.match(brief, /Open this folder in Copilot and say/);
   assert.match(brief, /Reimagine this Power Platform solution/);
 });
@@ -94,6 +95,7 @@ test("ingested kickoff does not re-issue the start command", () => {
   };
   const brief = kickoff("care-ops", intake, { ingested: true });
   assert.match(brief, /Source already ingested into `evidence\/`/);
+  assert.match(brief, /connect\.ps1/);
   assert.doesNotMatch(brief, /npm run reimagine -- start/);
 });
 

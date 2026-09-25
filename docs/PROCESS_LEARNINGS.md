@@ -51,9 +51,13 @@ run confirmed and the open items it surfaced:
   evidence → schema-valid model by hand (easy to trip on the `$defs` shapes). Improvement: have the
   discovery adapter emit a **draft model fragment** (tables/apps/agents/flows + basic deps +
   evidence) the agent refines.
-- **OPEN — re-running the wizard for the same pilot resets the workspace.** A fresh submit left
-  only `intake.json` + `KICKOFF.md`, wiping `solution-model.json` / evidence / generated. Warn or
-  confirm on submit when `workspaces/<slug>/solution-model.json` already exists.
+- **FIXED — re-running the wizard for the same pilot no longer disrupts the flow.** Root cause was
+  not data-wiping (submit only rewrites `intake.json` + `KICKOFF.md`); the real drift was that a
+  re-submit regenerated `KICKOFF.md` in the **ingested=false** state, telling the agent to
+  re-ingest — which then collided with the `start` freshness guard. Now `handleSubmit` checks for an
+  existing `solution-model.json` and keeps KICKOFF in the **ingested** state on re-submit. And
+  `start`'s `assertFreshWorkspace` returns an **actionable** message ("already ingested … run
+  `npm run status`" / lists offending files) instead of a cryptic "Output workspace is not empty".
 - **OPEN — acceptance play-URL check is a false-negative.** `acceptance.ps1` does a `HEAD` on the
   play URL, which returns 404 (the player doesn't answer HEAD) though the app is reachable in a
   browser. Use `GET` allowing redirect/401/403/200, or skip.
@@ -116,6 +120,31 @@ agent was built as code and imported **into the solution and the environment**:
   `<iframe>` from **`VITE_AGENT_EMBED_URL`** when set (Copilot Studio → Channels → Custom website),
   and falls back to the setup steps otherwise — so the agent lights up with a build var, no code
   change. `agent-guide` accepts `--tables/--built/--prefix/--solution` to fully tailor the guide.
+
+## New-developer journey — the wizard→agent hand-off (no-drift hardening)
+
+Walking the kit as a brand-new developer (clone → doctor → intake wizard → "Reimagine this" →
+build → publish) surfaced that the whole promise — *"you never run a command yourself; Copilot
+ingests, builds, and publishes"* (README/DAY_1 and the wizard's post-submit box) — rests entirely
+on the **SKILL** driving the agent's first moves. Two drift traps were fixed:
+
+- **Ingestion trigger must be state-based, not existence-based.** The wizard **creates** the
+  workspace (`intake.json` + `KICKOFF.md`) but does **not** ingest the source. The SKILL previously
+  said "if a workspace does not exist, run `start`" — so the agent could see the workspace, skip
+  ingestion, and then fail to validate a `solution-model.json` that isn't there. Fixed: SKILL
+  Section 1 is now an ordered **first-moves** sequence — *ingest if `solution-model.json`/`evidence`
+  is missing → `connect.ps1` → `preflight.ps1`* — and `KICKOFF.md` mirrors it.
+- **The agent must run `connect.ps1` itself.** Nothing in the SKILL or KICKOFF mentioned it, yet the
+  operator was told they never run a command. Now both instruct the agent to run
+  `./scripts/connect.ps1 -IntakePath …` and frame it as *"you run it; the operator only completes
+  the browser sign-in."* Preflight auth FAILs point back to it.
+- **`start` re-runs are friendly.** `assertFreshWorkspace` distinguishes *already-ingested* (has
+  `solution-model.json` → "you don't need `start`; run `npm run status`") from *foreign content*
+  (lists the offending files + remedy), instead of a cryptic "not empty".
+
+Verified with a live smoke test: a simulated wizard workspace → `start` ingests, preserves the rich
+`intake.json`, flips KICKOFF to the ingested state **with** the connect + preflight steps; a second
+`start` returns the actionable "already ingested" message.
 
 ## Discovery depth — UNPACK the real packages, not just the docs (CRITICAL)
 

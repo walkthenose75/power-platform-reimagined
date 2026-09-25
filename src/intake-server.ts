@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { spawn } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { MAX_SOLUTION_ZIP_BYTES, storeSolutionZip } from "./intake-upload.js";
 import { type IntakePayload, kickoff, nextCommand } from "./intake-kickoff.js";
@@ -85,8 +85,11 @@ async function handleSubmit(res: ServerResponse, bodyText: string): Promise<void
   const slug = slugify(intake.pilotName);
   const output = path.join(workspacesDir, slug);
   await mkdir(output, { recursive: true });
+  // If this pilot is already ingested (a re-submit), keep KICKOFF in the "ingested" state so we
+  // never tell the agent to re-ingest (which would then hit the "already ingested" guard).
+  const alreadyIngested = await stat(path.join(output, "solution-model.json")).then(() => true).catch(() => false);
   await writeFile(path.join(output, "intake.json"), `${JSON.stringify(document, null, 2)}\n`, "utf8");
-  await writeFile(path.join(output, "KICKOFF.md"), kickoff(slug, intake), "utf8");
+  await writeFile(path.join(output, "KICKOFF.md"), kickoff(slug, intake, { ingested: alreadyIngested }), "utf8");
 
   json(res, 200, {
     ok: true,

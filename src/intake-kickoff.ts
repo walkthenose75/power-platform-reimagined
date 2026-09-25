@@ -134,7 +134,8 @@ function orderedSteps(slug: string, intake: IntakePayload, ingested: boolean): s
       `2. Scaffold the workspace (seeds \`solution-model.json\` + directories):\n\n   \`\`\`powershell\n   npm run reimagine -- init --name "${intake.pilotName}" --source new-concept --output workspaces/${slug}\n   \`\`\``,
       "3. Read `intake.json` (problem, target users, target); treat `solution-model.json` as the source of truth to populate.",
       "4. **Enter plan mode.** With the operator, complete the plan — capabilities and scenarios, the Dataverse data model, and integrations. Get the operator's approval before building.",
-      "5. On approval, build it in a named unmanaged solution and follow `docs/REIMAGINE_PROCESS.md` from Phase 4, stopping at each approval gate."
+      `5. Before building, **establish the sign-ins** — you run it; the operator only completes the browser prompts: \`./scripts/connect.ps1 -IntakePath workspaces/${slug}/intake.json\`, then \`./scripts/preflight.ps1 -IntakePath workspaces/${slug}/intake.json\` and clear every FAIL.`,
+      "6. On approval, build it in a named unmanaged solution and follow `docs/REIMAGINE_PROCESS.md` from Phase 4, stopping at each approval gate."
     ].join("\n");
   }
 
@@ -142,7 +143,8 @@ function orderedSteps(slug: string, intake: IntakePayload, ingested: boolean): s
     return [
       "1. Load the `reimagine-power-platform` skill.",
       "2. Source already ingested into `evidence/`. Read `intake.json` and validate `solution-model.json`.",
-      "3. Follow `docs/REIMAGINE_PROCESS.md` (discovery → plan → build → review → publish), stopping at each approval gate."
+      `3. **Establish the sign-ins** — you run it; the operator only completes the browser prompts:\n\n   \`\`\`powershell\n   ./scripts/connect.ps1 -IntakePath workspaces/${slug}/intake.json\n   \`\`\`\n   Then run the readiness gate (\`preflight.ps1\`, see Build conventions) and clear every FAIL before any tenant mutation.`,
+      "4. Follow `docs/REIMAGINE_PROCESS.md` (discovery → plan → build → review → publish), stopping at each approval gate."
     ].join("\n");
   }
 
@@ -150,7 +152,8 @@ function orderedSteps(slug: string, intake: IntakePayload, ingested: boolean): s
     "1. Load the `reimagine-power-platform` skill.",
     `2. Ingest the source into this workspace. ${ingestionBlock(slug, intake)}`,
     "3. Read `intake.json` and validate `solution-model.json`.",
-    "4. Follow `docs/REIMAGINE_PROCESS.md` (discovery → plan → build → review → publish), stopping at each approval gate."
+    `4. **Establish the sign-ins** — you run it; the operator only completes the browser prompts:\n\n   \`\`\`powershell\n   ./scripts/connect.ps1 -IntakePath workspaces/${slug}/intake.json\n   \`\`\`\n   Then run the readiness gate (\`preflight.ps1\`, see Build conventions) and clear every FAIL before any tenant mutation.`,
+    "5. Follow `docs/REIMAGINE_PROCESS.md` (discovery → plan → build → review → publish), stopping at each approval gate."
   ].join("\n");
 }
 
@@ -191,7 +194,7 @@ function buildConventions(slug: string, intake: IntakePayload): string {
 
 ## Build conventions
 
-- **Readiness gate (before any tenant mutation):** run \`./scripts/preflight.ps1 -IntakePath workspaces/${slug}/intake.json\` and clear every FAIL (source auth, code-apps enablement, Power Apps license).
+- **Readiness gate (before any tenant mutation):** run \`./scripts/preflight.ps1 -IntakePath workspaces/${slug}/intake.json\` and clear every FAIL. For auth FAILs, re-run \`./scripts/connect.ps1 -IntakePath workspaces/${slug}/intake.json\` (you run it; the operator completes the browser sign-in). Other FAILs: code-apps enablement, Power Apps license.
 - **UI system:** ${uiLine}
 - **Recommended models:** drive the build with the strongest agentic **coding** model available (Claude Sonnet-class); use a high-**reasoning** model (GPT-5 / o-series) for the architecture and plan-mode gates. Pick the strongest your harness offers.
 - **Definition of done (after building):** run \`./scripts/acceptance.ps1 -EnvironmentUrl <target> -SolutionUnique <name> -Prefix <prefix> [-AppUrl <play-url>] [-PublicationPath workspaces/${slug}/publication]\` and get **ACCEPTED** before calling it complete.
