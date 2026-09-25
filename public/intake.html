@@ -364,12 +364,29 @@ document.getElementById('runPreflight').addEventListener('click', async ()=>{
 });
 
 async function submit(){
-  const payload=buildPayload();
   const res=document.getElementById('result');
-  const r=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  const data=await r.json();
-  if(!data.ok){ res.innerHTML=`<p style="color:var(--bad)"><b>Couldn't save:</b></p><pre>${(data.errors||[]).join('\n')}</pre>`; return; }
+  res.innerHTML='<p class="hint">Saving…</p>';
+  res.scrollIntoView({behavior:'smooth',block:'center'});
+  let payload;
+  try{
+    payload=buildPayload();
+  }catch(e){
+    res.innerHTML=`<p style="color:var(--bad)"><b>Couldn't build the brief:</b> ${(e&&e.message)||e}</p>`;
+    res.scrollIntoView({block:'center'});
+    return;
+  }
+  let data;
+  try{
+    const r=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    data=await r.json();
+  }catch(e){
+    res.innerHTML=`<div class="done-box" style="border-color:var(--bad)"><h3 style="margin:0 0 8px;color:var(--bad)">Submit failed</h3><p>${(e&&e.message)||e}</p><p class="hint">The intake server may have stopped. In your terminal, re-run <code>npm run intake</code>, then click Submit again.</p></div>`;
+    res.scrollIntoView({block:'center'});
+    return;
+  }
+  if(!data.ok){ res.innerHTML=`<p style="color:var(--bad)"><b>Couldn't save:</b></p><pre>${(data.errors||[]).join('\n')}</pre>`; res.scrollIntoView({block:'center'}); return; }
   res.innerHTML=`<div class="done-box"><h3 style="margin:0 0 8px">Saved ✓</h3><p>Your brief is written to <code>${data.workspace}/intake.json</code> and <code>${data.workspace}/KICKOFF.md</code>.</p><p><b>One step from here:</b> open <code>${data.workspace}/KICKOFF.md</code> in Copilot and say:</p><p style="font-size:16px"><b>“Reimagine this Power Platform solution.”</b></p><p class="hint"><b>Use an agentic harness</b> — VS Code Copilot <b>Agent mode</b> (or Copilot CLI) — with a frontier model: <b>Claude Sonnet 4.5</b> (Opus for the hardest reasoning). In plain Ask/Chat the AI can't run your build. New here? See <code>docs/DAY_1.md</code>.</p><p class="hint">Copilot takes over from there — it ingests the source (or, for a new concept, plans it with you), then builds, reviews, and publishes, stopping only at the approval gates. You never run a command yourself.</p></div>`;
+  res.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 function validateStep(){
@@ -393,7 +410,14 @@ document.getElementById('next').addEventListener('click', async ()=>{
       return;
     }
   }
-  if(step===TOTAL-1){ await submit(); return; }
+  if(step===TOTAL-1){
+    const btn=document.getElementById('next');
+    const label=btn.textContent;
+    btn.disabled=true; btn.textContent='Saving…';
+    try{ await submit(); }
+    finally{ btn.disabled=false; btn.textContent=label; }
+    return;
+  }
   step++; show();
 });
 document.getElementById('back').addEventListener('click', ()=>{ if(step>0){step--;show();} });

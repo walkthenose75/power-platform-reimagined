@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { assertSolutionZip, sanitizeZipFileName, storeSolutionZip } from "../src/intake-upload.js";
-import { agentsBrief, kickoff, nextCommand } from "../src/intake-kickoff.js";
+import { agentsBrief, kickoff, nextCommand, operatorInputs } from "../src/intake-kickoff.js";
 import { runPreflight } from "../src/preflight.js";
 import { validateObject } from "../src/validation.js";
 
@@ -262,4 +262,25 @@ test("nextCommand is null for a new concept and set for a repository", () => {
     nextCommand("y", { pilotName: "Y", entryMode: "repository", source: { repository: "https://example.invalid/repo" } }) ?? "",
     /--repo https:\/\/example\.invalid\/repo/
   );
+});
+
+test("kickoff surfaces operator inputs (target, intent, hub metadata, narrative)", () => {
+  const brief = kickoff("inv", {
+    pilotName: "Inventory",
+    entryMode: "solution-zip",
+    source: { zipPath: "inbox/inv/S.zip", dependencyBoundary: "full-closure" },
+    target: { environmentUrl: "https://org.crm.dynamics.com/", signInAccount: "a@b.com", teamsPackaging: true, uiSystem: "fluent2" },
+    synthetic: { realism: "demo", volume: "small" },
+    reimagine: { keepChangeDrop: "Keep everything", featureIdeas: "none yet" },
+    publish: { githubRepoUrl: "https://github.com/x/y", solutionHub: { title: "Inventory", industry: "Providers", contentTypes: ["Demo Assets"], technicalAreas: ["Dataverse", "AI Agents"], contributors: "Kyle", narrative: "Business value narrative here." } }
+  });
+  assert.match(brief, /## Operator inputs/);
+  assert.match(brief, /Target environment:\*\* https:\/\/org\.crm\.dynamics\.com\//);
+  assert.match(brief, /Keep \/ change \/ drop:\*\* Keep everything/);
+  assert.match(brief, /Industry:\*\* Providers/);
+  assert.match(brief, /Business value narrative here\./);
+});
+
+test("operatorInputs is empty when nothing extra was captured", () => {
+  assert.equal(operatorInputs({ pilotName: "Bare", entryMode: "new-concept" }), "");
 });

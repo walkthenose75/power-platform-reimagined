@@ -10,11 +10,38 @@ export interface IntakePayload {
     dependencyBoundary?: "full-closure" | "referenced-only" | "solution-owned";
   };
   target?: {
+    environmentUrl?: string;
+    signInAccount?: string;
+    teamsPackaging?: boolean;
     uiSystem?: "fluent2" | "custom";
     agents?: {
       copilotStudio?: boolean;
       m365Copilot?: boolean;
       harness?: "standard" | "github-copilot";
+    };
+  };
+  synthetic?: {
+    realism?: string;
+    volume?: string;
+  };
+  reimagine?: {
+    painPoints?: string;
+    keepChangeDrop?: string;
+    featureIdeas?: string;
+  };
+  concept?: {
+    problem?: string;
+    users?: string;
+  };
+  publish?: {
+    githubRepoUrl?: string;
+    solutionHub?: {
+      title?: string;
+      industry?: string;
+      contentTypes?: string[];
+      technicalAreas?: string[];
+      contributors?: string;
+      narrative?: string;
     };
   };
 }
@@ -171,6 +198,61 @@ function buildConventions(slug: string, intake: IntakePayload): string {
 - **Stay on rail (no drift):** run \`npm run status\` (or just \`npm run reimagine\`) anytime to see the current phase and the one next action. When a gate is approved, record it — \`npm run reimagine -- gate <stage> --workspace workspaces/${slug}\` — so \`solution-model.json\` always tracks where you are.`;
 }
 
+function bullet(label: string, value: string | undefined): string | null {
+  const v = (value ?? "").trim();
+  return v ? `- **${label}:** ${v}` : null;
+}
+
+export function operatorInputs(intake: IntakePayload): string {
+  const t = intake.target ?? {};
+  const s = intake.synthetic ?? {};
+  const r = intake.reimagine ?? {};
+  const c = intake.concept ?? {};
+  const hub = intake.publish?.solutionHub ?? {};
+  const arr = (v: string[] | undefined): string => (Array.isArray(v) && v.length ? v.join(", ") : "");
+
+  const target = [
+    bullet("Target environment", t.environmentUrl),
+    bullet("Sign-in account", t.signInAccount),
+    typeof t.teamsPackaging === "boolean" ? `- **Teams personal tab:** ${t.teamsPackaging ? "yes" : "no"}` : null,
+    bullet("UI system", t.uiSystem === "custom" ? "Custom design system" : t.uiSystem === "fluent2" ? "Fluent UI 2" : undefined)
+  ].filter(Boolean);
+
+  const data = [
+    bullet("Synthetic realism", s.realism),
+    bullet("Synthetic volume", s.volume)
+  ].filter(Boolean);
+
+  const intent = [
+    bullet("Problem", c.problem),
+    bullet("Target users", c.users),
+    bullet("Keep / change / drop", r.keepChangeDrop),
+    bullet("Known pain points", r.painPoints),
+    bullet("Feature ideas", r.featureIdeas)
+  ].filter(Boolean);
+
+  const publish = [
+    bullet("Hub title", hub.title),
+    bullet("Industry", hub.industry),
+    bullet("Content types", arr(hub.contentTypes)),
+    bullet("Technical areas", arr(hub.technicalAreas)),
+    bullet("Contributors", hub.contributors),
+    bullet("GitHub repo", intake.publish?.githubRepoUrl)
+  ].filter(Boolean);
+
+  const groups: string[] = [];
+  if (target.length) groups.push(`**Target**\n${target.join("\n")}`);
+  if (data.length) groups.push(`**Synthetic data**\n${data.join("\n")}`);
+  if (intent.length) groups.push(`**Intent**\n${intent.join("\n")}`);
+  if (publish.length) groups.push(`**Solution Hub / Solution City**\n${publish.join("\n")}`);
+
+  const narrative = (hub.narrative ?? "").trim();
+  const narrativeBlock = narrative ? `\n\n**Narrative / business value (from intake)**\n\n${narrative}` : "";
+
+  if (!groups.length && !narrativeBlock) return "";
+  return `\n\n## Operator inputs (from the wizard)\n\n${groups.join("\n\n")}${narrativeBlock}\n\nHonor these while designing and building. The complete brief is in \`intake.json\`.`;
+}
+
 export function kickoff(slug: string, intake: IntakePayload, options: KickoffOptions = {}): string {
   const ingested = options.ingested ?? false;
   return `# Kickoff Brief — ${intake.pilotName}
@@ -180,7 +262,7 @@ export function kickoff(slug: string, intake: IntakePayload, options: KickoffOpt
 Captured by the guided intake wizard. See \`intake.json\` in this folder for the full brief.
 
 - Entry mode: **${intake.entryMode}**
-- Source: ${sourceLine(intake)}${agentsBrief(intake)}
+- Source: ${sourceLine(intake)}${agentsBrief(intake)}${operatorInputs(intake)}
 
 ## Start here (operator)
 

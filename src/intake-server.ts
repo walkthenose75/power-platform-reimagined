@@ -109,7 +109,10 @@ async function serveStatic(res: ServerResponse, file: string): Promise<void> {
       return;
     }
     const content = await readFile(resolved);
-    res.writeHead(200, { "Content-Type": contentTypes[path.extname(resolved)] ?? "application/octet-stream" });
+    res.writeHead(200, {
+      "Content-Type": contentTypes[path.extname(resolved)] ?? "application/octet-stream",
+      "Cache-Control": "no-store, must-revalidate"
+    });
     res.end(content);
   } catch {
     res.writeHead(404, { "Content-Type": "text/plain" });
