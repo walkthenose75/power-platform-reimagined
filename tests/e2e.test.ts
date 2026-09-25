@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -107,4 +107,22 @@ test("package flags missing Solution Hub fields as NOT ready", async (t) => {
   assert.equal(report.hub.ready, false);
   assert.ok(report.hub.missing.includes("industry"));
   assert.deepEqual(report.scanFindings, []);
+});
+
+test("packaged demo data is turnkey — ships the manifest + self-contained loader", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "reimagine-e2e-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const workspace = path.join(root, "with-data");
+  await initializeWorkspace({ name: "With Data", source: "new-concept", output: workspace });
+  // A workspace with synthetic-data CSVs + a manifest (as the data stage produces).
+  await mkdir(path.join(workspace, "synthetic-data", "csv"), { recursive: true });
+  await writeFile(path.join(workspace, "synthetic-data", "csv", "x_item.csv"), "x_name\nA\n", "utf8");
+  await writeFile(path.join(workspace, "synthetic-data", "manifest.json"), JSON.stringify({ entities: [] }), "utf8");
+
+  await packagePublication(workspace);
+  // The CSV, the manifest, AND the loader travel with the bundle so the data imports in one command.
+  const dataDir = path.join(workspace, "publication", "synthetic-data");
+  assert.equal((await readFile(path.join(dataDir, "x_item.csv"), "utf8")).length > 0, true);
+  assert.equal((await readFile(path.join(dataDir, "manifest.json"), "utf8")).length > 0, true);
+  assert.match(await readFile(path.join(dataDir, "load-synthetic-data.ps1"), "utf8"), /EnvironmentUrl|ManifestPath/);
 });

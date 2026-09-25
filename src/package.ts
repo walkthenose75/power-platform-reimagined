@@ -1,5 +1,6 @@
 import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { IntakePayload } from "./intake-kickoff.js";
 import { renderAgentBuild } from "./agent-build.js";
 import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
@@ -84,7 +85,7 @@ ${narrative}
 1. Ensure **Power Apps code apps** are enabled on your target environment.
 2. Import the unmanaged solution from \`solution/\` (Dataverse schema).
 3. Deploy the code app from source: \`pac code push --environment <your-env-url> --solutionName <solution>\`.
-4. Load the fictitious demo data from \`synthetic-data/\`.
+4. Load the fictitious demo data — from \`synthetic-data/\`: \`az login\` then \`./synthetic-data/load-synthetic-data.ps1 -EnvironmentUrl <your-env-url> -ManifestPath ./synthetic-data/manifest.json\` (resolves lookups; see \`synthetic-data/README.md\` for portal/Package Deployer alternatives).
 5. Complete the UI/admin steps in \`MANUAL_STEPS.md\` (connections, agent publish + approval, Teams CSP, sharing).${agentInstall}
 
 ## Demo
@@ -149,6 +150,16 @@ async function copyDirIfPresent(from: string, to: string): Promise<boolean> {
   return copied;
 }
 
+async function copyFileIfPresent(from: string, to: string): Promise<boolean> {
+  try {
+    await mkdir(path.dirname(to), { recursive: true });
+    await copyFile(from, to);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function packagePublication(workspace: string, options: { outDir?: string } = {}): Promise<PackageReport> {
   const intake = await readJson(path.join(workspace, "intake.json"));
   const model = await readJson(path.join(workspace, "solution-model.json"));
@@ -193,6 +204,14 @@ export async function packagePublication(workspace: string, options: { outDir?: 
 
   if (await copyDirIfPresent(path.join(workspace, "synthetic-data", "csv"), path.join(outputDir, "synthetic-data"))) {
     files.push("synthetic-data/");
+    // Ship the import mechanism with the data so the CSVs are turnkey (not just reviewable):
+    // the manifest (table keys + lookup mapping) and the self-contained loader.
+    await copyFileIfPresent(
+      path.join(workspace, "synthetic-data", "manifest.json"),
+      path.join(outputDir, "synthetic-data", "manifest.json")
+    );
+    const loaderSrc = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts", "load-synthetic-data.ps1");
+    await copyFileIfPresent(loaderSrc, path.join(outputDir, "synthetic-data", "load-synthetic-data.ps1"));
   }
 
   const scanFindings = await scanPath(outputDir);
