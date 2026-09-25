@@ -49,15 +49,17 @@ Pilot-specific discovery and rebuilding begin after a source solution is selecte
 
 ## Quick start
 
-Prerequisites:
-
-- Node.js 20 or newer
-- Power Platform CLI and environment access for tenant-based pilots
-- VS Code with Copilot and the required Power Platform workload tools
+Prerequisites: see **[Day 1 — First run](docs/DAY_1.md)**. Verify your machine in one command:
 
 ```powershell
 npm install
-npm run check
+npm run doctor      # checks tools, versions, VS Code extensions, and repo deps
+npm run intake      # the guided intake wizard (recommended front door)
+```
+
+Prefer the command line instead of the wizard?
+
+```powershell
 npm run reimagine -- start --name "Fabrikam Care Operations" --zip .\inbox\FabrikamCare.zip --output workspaces/fabrikam-care
 npm run reimagine -- validate --workspace workspaces/fabrikam-care
 ```

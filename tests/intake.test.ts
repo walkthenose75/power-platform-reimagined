@@ -179,7 +179,7 @@ test("rejects an unknown industry value", async () => {
 
 test("preflight returns the expected checks", async () => {
   const checks = await runPreflight();
-  assert.equal(checks.length, 6);
+  assert.equal(checks.length, 7);
   for (const check of checks) {
     assert.equal(typeof check.name, "string");
     assert.equal(typeof check.ok, "boolean");
@@ -188,6 +188,7 @@ test("preflight returns the expected checks", async () => {
   const names = checks.map((c) => c.name);
   assert.ok(names.some((n) => n.includes("Node")));
   assert.ok(names.some((n) => n.includes("pac")));
+  assert.ok(names.some((n) => n.includes(".NET")));
 });
 
 test("sanitizes an uploaded ZIP filename", () => {

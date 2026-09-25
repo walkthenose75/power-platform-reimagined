@@ -34,11 +34,18 @@ Quick list (full checklist + versions in [PREREQUISITES.md](PREREQUISITES.md)):
 - **VS Code** with an AI agent extension (GitHub Copilot + Copilot Chat, or the Copilot SDK /
   Claude Code extension) **and** Power Platform Tools.
 
-One‑shot check (every line should print a version):
+One‑shot check — after `npm install`, run the **prerequisites doctor**:
 
 ```powershell
-node --version; git --version; dotnet --version; pac help | Select-Object -First 1; az version
+npm run doctor
 ```
+
+It verifies tools + versions, your **VS Code extensions**, and repo dependencies, and prints the
+exact fix for anything missing. Green here means your machine is ready.
+
+> **Two gates, in order.** `npm run doctor` = *"is my machine set up?"* (now, no sign‑in). After
+> intake, `./scripts/preflight.ps1 -IntakePath workspaces/<pilot>/intake.json` = *"can I build
+> this pilot?"* (env auth, source, code‑apps enablement, license).
 
 ## 2. Use an agentic harness (this matters most)
 
@@ -76,6 +83,7 @@ Match the model to the work. For hours of multi‑step, tool‑heavy building, s
 
 ```powershell
 npm install
+npm run doctor      # verify your machine is ready (tools, extensions, deps)
 npm run intake      # opens the guided intake wizard in your browser
 ```
 

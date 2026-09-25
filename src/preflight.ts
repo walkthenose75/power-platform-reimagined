@@ -55,9 +55,10 @@ function nodeMeets22(version: string): boolean {
 }
 
 export async function runPreflight(): Promise<PreflightCheck[]> {
-  const [node, git, pac, az, pacAuth, azAuth] = await Promise.all([
+  const [node, git, dotnet, pac, az, pacAuth, azAuth] = await Promise.all([
     tryRun("node", ["--version"]),
     tryRun("git", ["--version"]),
+    tryRun("dotnet", ["--version"]),
     tryRun("pac", ["help"]),
     tryRun("az", ["version"]),
     tryRun("pac", ["auth", "list"]),
@@ -76,6 +77,12 @@ export async function runPreflight(): Promise<PreflightCheck[]> {
       ok: git.ok,
       detail: git.ok ? firstLine(git.out) : "not found — install from git-scm.com",
       required: true
+    },
+    {
+      name: ".NET SDK 8+",
+      ok: dotnet.ok,
+      detail: dotnet.ok ? firstLine(dotnet.out) : "not found — needed to install pac; dotnet.microsoft.com",
+      required: false
     },
     {
       name: "Power Platform CLI (pac)",

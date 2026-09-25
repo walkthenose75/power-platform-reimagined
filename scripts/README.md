@@ -8,6 +8,7 @@ Prereqs: `pac` + `az` installed; `az login --tenant <target-tenant>`; System Cus
 
 | Script | Purpose | When |
 |---|---|---|
+| `check-prereqs.ps1` | **Prerequisites doctor:** machine setup only — tools + versions, VS Code extensions, repo deps. No env/auth. Run FIRST via `npm run doctor`. | Day 1 / before intake |
 | `preflight.ps1` | Phase 2 readiness: tools, `pac`/`az` auth to the **target** env, Dataverse reachability + maker role, **source readiness per entry mode** (tenant auth + solution exists / repo+revision reachable / uploaded ZIP present), and **enablement + licensing** (code-apps checkpoint, admin-rights note, best-effort Power Apps license probe). Reads the wizard brief with `-IntakePath`. | Before building |
 | `analyze-artifacts.ps1` | **Discovery adapter:** unpack canvas `.msapp` (Power Fx) + flow `definition.json` from a source solution/repo and summarize real behavior into `behavior-evidence.md`. | During discovery (Phase 3) |
 | `ensure-solution.ps1` | **Solution-first:** create the publisher + unmanaged solution. | First mutation step |

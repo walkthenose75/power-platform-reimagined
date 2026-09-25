@@ -71,11 +71,22 @@ default one.
 
 ## 6. One-shot verification
 
-Run this and confirm every line prints a version:
+From the repo root, let the **prerequisites doctor** check everything (tools + versions, VS Code
+extensions, and repo dependencies) and print exact fixes for anything missing:
+
+```powershell
+npm run doctor
+```
+
+Raw fallback (no repo needed) — confirm every line prints a version:
 
 ```powershell
 node --version; npm --version; git --version; dotnet --version; pac help | Select-Object -First 1; az version
 ```
+
+> **Two gates, in order:** `npm run doctor` answers *"is my machine set up?"* (run first, no
+> sign-in). After intake, `./scripts/preflight.ps1 -IntakePath workspaces/<pilot>/intake.json`
+> answers *"can I build this pilot?"* (env auth, source, code-apps enablement, license).
 
 ## Related
 
