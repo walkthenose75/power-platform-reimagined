@@ -161,6 +161,7 @@ test("kickoff build conventions default to Fluent 2 and note recommended models"
   assert.match(fluent, /Recommended models/);
   assert.match(fluent, /preflight\.ps1 -IntakePath workspaces\/care-ops\/intake\.json/);
   assert.match(fluent, /acceptance\.ps1/);
+  assert.match(fluent, /npm run status/);
 
   const custom = kickoff("care-ops", { pilotName: "Care Ops", entryMode: "new-concept", target: { uiSystem: "custom" } });
   assert.match(custom, /Custom \/ bespoke design system/);

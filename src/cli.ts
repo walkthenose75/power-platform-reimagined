@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { startFromRepository, startFromZip } from "./intake.js";
 import { scanPath } from "./sanitizer.js";
+import { approveGate, computeStatus, findNewestWorkspace, renderStatus } from "./status.js";
 import type { InitOptions, SourceType } from "./types.js";
 import { validateWorkspace } from "./validation.js";
 import { initializeWorkspace } from "./workspace.js";
@@ -15,8 +16,17 @@ function valueOf(args: string[], flag: string): string {
   return value;
 }
 
+function optionalValueOf(args: string[], flag: string): string | undefined {
+  const index = args.indexOf(flag);
+  const value = index >= 0 ? args[index + 1] : undefined;
+  return value && !value.startsWith("--") ? value : undefined;
+}
+
 function printUsage(): void {
   console.log(`Usage:
+  reimagine                                            # what's my status + next step?
+  reimagine status [--workspace <directory>]           # where am I, and what's next?
+  reimagine gate <stage> [--workspace <directory>] [--note <text>]   # record a gate approval
   reimagine start --name <name> --zip <solution.zip> --output <directory>
   reimagine start --name <name> --repo <url> [--revision <branch-or-tag>] --output <directory>
   reimagine start --name <name> --inbox <directory> --output <directory>
@@ -25,10 +35,45 @@ function printUsage(): void {
   reimagine scan --path <directory>`);
 }
 
+async function printStatus(workspace: string | null): Promise<void> {
+  const ws = workspace ?? (await findNewestWorkspace());
+  if (!ws) {
+    console.log("No pilots yet.\n\nGet started:\n  1. npm run doctor      # verify your machine\n  2. npm run intake      # capture the pilot\nThen open the workspace KICKOFF.md in Copilot and say: \"Reimagine this Power Platform solution.\"");
+    return;
+  }
+  console.log(renderStatus(await computeStatus(ws)));
+}
+
 async function main(): Promise<void> {
   const [, , command, ...args] = process.argv;
-  if (!command || command === "--help" || command === "-h") {
+  if (!command) {
+    await printStatus(null);
+    return;
+  }
+  if (command === "--help" || command === "-h") {
     printUsage();
+    return;
+  }
+
+  if (command === "status") {
+    await printStatus(optionalValueOf(args, "--workspace") ? path.resolve(valueOf(args, "--workspace")) : null);
+    return;
+  }
+
+  if (command === "gate") {
+    const stage = args[0] && !args[0].startsWith("--") ? args[0] : undefined;
+    if (!stage) {
+      throw new Error("Usage: reimagine gate <stage> [--workspace <directory>] [--note <text>]");
+    }
+    const workspace = optionalValueOf(args, "--workspace")
+      ? path.resolve(valueOf(args, "--workspace"))
+      : await findNewestWorkspace();
+    if (!workspace) {
+      throw new Error("No workspace found. Pass --workspace <directory>.");
+    }
+    const report = await approveGate(workspace, stage, optionalValueOf(args, "--note"));
+    console.log(`Gate '${stage}' recorded.\n`);
+    console.log(renderStatus(report));
     return;
   }
 

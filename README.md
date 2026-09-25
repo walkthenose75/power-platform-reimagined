@@ -55,6 +55,7 @@ Prerequisites: see **[Day 1 — First run](docs/DAY_1.md)**. Verify your machine
 npm install
 npm run doctor      # checks tools, versions, VS Code extensions, and repo deps
 npm run intake      # the guided intake wizard (recommended front door)
+npm run status      # anytime: where am I, and what's the one next step?
 ```
 
 Prefer the command line instead of the wizard?

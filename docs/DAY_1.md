@@ -98,6 +98,9 @@ Then do the **one** thing you run yourself: open `workspaces/<pilot>/KICKOFF.md`
 Copilot takes it from there — it ingests the source (or, for a new concept, plans it with you),
 then builds, reviews, and publishes, stopping only at the approval gates.
 
+**One command to never be lost:** run `npm run status` (or just `npm run reimagine`) any time — it
+prints the current phase, the pending gate, and the single next action.
+
 ## What happens next — you only do 5 things
 
 Across the 8‑phase journey ([REIMAGINE_PROCESS.md](REIMAGINE_PROCESS.md)) you personally:

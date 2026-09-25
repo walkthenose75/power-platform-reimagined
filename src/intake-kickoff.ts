@@ -166,7 +166,8 @@ function buildConventions(slug: string, intake: IntakePayload): string {
 - **Readiness gate (before any tenant mutation):** run \`./scripts/preflight.ps1 -IntakePath workspaces/${slug}/intake.json\` and clear every FAIL (source auth, code-apps enablement, Power Apps license).
 - **UI system:** ${uiLine}
 - **Recommended models:** drive the build with the strongest agentic **coding** model available (Claude Sonnet-class); use a high-**reasoning** model (GPT-5 / o-series) for the architecture and plan-mode gates. Pick the strongest your harness offers.
-- **Definition of done (after building):** run \`./scripts/acceptance.ps1 -EnvironmentUrl <target> -SolutionUnique <name> -Prefix <prefix> [-AppUrl <play-url>] [-PublicationPath workspaces/${slug}/publication]\` and get **ACCEPTED** before calling it complete.`;
+- **Definition of done (after building):** run \`./scripts/acceptance.ps1 -EnvironmentUrl <target> -SolutionUnique <name> -Prefix <prefix> [-AppUrl <play-url>] [-PublicationPath workspaces/${slug}/publication]\` and get **ACCEPTED** before calling it complete.
+- **Stay on rail (no drift):** run \`npm run status\` (or just \`npm run reimagine\`) anytime to see the current phase and the one next action. When a gate is approved, record it — \`npm run reimagine -- gate <stage> --workspace workspaces/${slug}\` — so \`solution-model.json\` always tracks where you are.`;
 }
 
 export function kickoff(slug: string, intake: IntakePayload, options: KickoffOptions = {}): string {

@@ -192,6 +192,19 @@ npm run reimagine -- scan --path "<publication-directory>"
 
 Any finding blocks publication. Require human publication approval.
 
+## Progress & gates (stay on rail — no drift)
+
+`solution-model.json` is the single source of truth for **where the pilot is**. Keep it current so
+neither you nor the operator ever loses the thread:
+
+- At any time, run `npm run status` (or `npm run reimagine`) to print the current stage, the
+  pending gate, and the one next action. Use it to re-orient at the start of every session.
+- When the operator approves a gate, record it: `npm run reimagine -- gate <stage> --workspace workspaces/<pilot>`.
+  This appends to the `gates` ledger and advances `assessment.stage`.
+- Stages, in order: `intake → discovery → intent → feature-selection → architecture →
+  synthetic-data → build → validation → publication`. Do not skip a gate; do not mutate the
+  tenant before the `build` gate is authorized.
+
 ## Output format
 
 At every gate, report:

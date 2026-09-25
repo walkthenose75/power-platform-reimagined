@@ -12,6 +12,7 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "check": "npm run build && npm test",
     "doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-prereqs.ps1",
+    "status": "tsx src/cli.ts status",
     "reimagine": "tsx src/cli.ts",
     "intake": "tsx src/intake-server.ts"
   },

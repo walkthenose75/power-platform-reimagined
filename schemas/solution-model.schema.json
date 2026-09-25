@@ -117,6 +117,31 @@
     "decisions": {
       "type": "array",
       "items": { "$ref": "#/$defs/decision" }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stage", "approvedAt"],
+        "properties": {
+          "stage": {
+            "enum": [
+              "intake",
+              "discovery",
+              "intent",
+              "feature-selection",
+              "architecture",
+              "synthetic-data",
+              "build",
+              "validation",
+              "publication"
+            ]
+          },
+          "approvedAt": { "type": "string", "format": "date-time" },
+          "note": { "type": "string" }
+        }
+      }
     }
   },
   "$defs": {

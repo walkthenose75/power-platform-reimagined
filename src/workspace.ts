@@ -50,7 +50,8 @@ export async function initializeWorkspace(options: InitOptions): Promise<void> {
     claims: [],
     unknowns: [],
     featureOpportunities: [],
-    decisions: []
+    decisions: [],
+    gates: []
   };
 
   const directories = [
