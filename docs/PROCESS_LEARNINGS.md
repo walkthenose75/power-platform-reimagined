@@ -3,6 +3,32 @@
 Captured while running the Virtual Rounding pilot. These generalize to any SE reimagining a
 Power Platform solution and should feed the `reimagine-power-platform` skill and docs.
 
+## Real-run findings — Inventory pilot (solution-zip, 30 MB, Copilot Studio agents)
+
+A second real run — a **30.74 MB** enterprise solution zip (canvas app + **2 Copilot Studio
+agents** + 2 Dataverse tables) — surfaced and drove these fixes:
+
+- **Intake Submit must never fail silently.** The success box rendered off-screen, so Submit
+  "did nothing." Fixed: `submit()` shows a Saving… indicator, wraps `buildPayload` and the fetch
+  in try/catch, renders the real error, disables the button while saving, and scrolls the result
+  into view. Server now sends `Cache-Control: no-store` so a stale wizard is never used.
+- **KICKOFF.md must reflect the operator's inputs.** The doc only showed entry mode/source/agents
+  and pointed to `intake.json`, so a rich narrative + target + intent looked "lost." Fixed: added
+  an **Operator inputs** section (target, synthetic prefs, keep/change/drop, feature ideas,
+  Solution Hub metadata + full narrative).
+- **Discovery must inventory Copilot Studio agents.** `analyze-artifacts.ps1` handled `.msapp`
+  canvas apps and flow `definition.json` but **silently dropped the two Copilot Studio agents** —
+  which were the whole point of the solution. Fixed: it now finds `bot.xml`, lists each agent
+  (schema/display name), and notes that deep topic/action/knowledge discovery routes to the
+  Advisor/Author specialists so agents are never dropped.
+- **Dedupe canvas screens.** `pac canvas unpack` emits both `*.fx.yaml` and legacy `*.pa.yaml`,
+  so every screen was reported twice. Fixed: prefer `.fx.yaml`, include a `.pa.yaml` only when no
+  `.fx.yaml` exists, and show a clean screen name.
+- **Backlog (open): the source zip gets copied twice.** The wizard uploads + unpacks to
+  `inbox/<pilot>/` (zip + `unpacked/`), then `start --zip` copies the same zip again into
+  `workspaces/<pilot>/evidence/source/` and ignores the already-unpacked content. For big
+  solutions, have `start --zip` reuse the wizard's unpack (or seed the workspace directly).
+
 ## Discovery depth — UNPACK the real packages, not just the docs (CRITICAL)
 
 The single biggest miss on the pilot: I first reconstructed behavior from **README/docs + setup

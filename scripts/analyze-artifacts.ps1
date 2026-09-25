@@ -34,13 +34,15 @@ Get-ChildItem -Recurse -Path $src -Filter *.zip -ErrorAction SilentlyContinue | 
 }
 
 # collect artifacts across all roots
-$msapps = @(); $defs = @()
+$msapps = @(); $defs = @(); $bots = @()
 foreach ($root in $scanRoots) {
   $msapps += Get-ChildItem -Recurse -Path $root -Filter *.msapp -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
   $defs   += Get-ChildItem -Recurse -Path $root -Filter definition.json -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+  $bots   += Get-ChildItem -Recurse -Path $root -Filter bot.xml -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
 }
 $msapps = $msapps | Sort-Object -Unique
 $defs   = $defs   | Sort-Object -Unique
+$bots   = $bots   | Sort-Object -Unique
 
 $actionRegex = 'Patch\(|\.Run\(|Launch\(|Navigate\(|Set\(|UpdateContext|Collect\(|Remove\(|SubmitForm\(|ClearCollect\(|Notify\(|Office365|SharePoint|Outlook|Reset\('
 $out = New-Object System.Collections.Generic.List[string]
@@ -58,13 +60,20 @@ foreach ($m in $msapps) {
   $srcDir = TempDir
   try { pac canvas unpack --msapp $m --sources $srcDir 2>&1 | Out-Null }
   catch { $out.Add("_unpack failed: $($_.Exception.Message)_"); $out.Add(""); continue }
-  $screens = Get-ChildItem -Recurse -Path $srcDir -Include *.fx.yaml, *.pa.yaml -ErrorAction SilentlyContinue |
+  $allScreens = Get-ChildItem -Recurse -Path $srcDir -Include *.fx.yaml, *.pa.yaml -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -notmatch '^App\.' }
+  # Prefer the current .fx.yaml; only include a legacy .pa.yaml if no .fx.yaml exists for that screen.
+  $fxBases = @{}
+  foreach ($f in ($allScreens | Where-Object { $_.Name -like '*.fx.yaml' })) { $fxBases[($f.Name -replace '\.fx\.yaml$', '')] = $true }
+  $screens = $allScreens | Where-Object {
+    if ($_.Name -like '*.fx.yaml') { $true } else { -not $fxBases[($_.Name -replace '\.pa\.yaml$', '')] }
+  }
   foreach ($s in $screens) {
     $hits = Select-String -Path $s.FullName -Pattern $actionRegex -ErrorAction SilentlyContinue |
       ForEach-Object { $_.Line.Trim() } | Where-Object { $_ -match '=' } | Select-Object -Unique
     if ($hits) {
-      $out.Add("- **$([System.IO.Path]::GetFileNameWithoutExtension($s.Name))**")
+      $screenName = ($s.Name -replace '\.(fx|pa)\.yaml$', '')
+      $out.Add("- **$screenName**")
       foreach ($h in ($hits | Select-Object -First 20)) {
         $clean = ($h -replace '\s+', ' '); if ($clean.Length -gt 200) { $clean = $clean.Substring(0, 200) + " ..." }
         $out.Add("  - ``$clean``")
@@ -72,6 +81,34 @@ foreach ($m in $msapps) {
     }
   }
   $out.Add("")
+}
+
+# --- Copilot Studio agents (bots) ---
+$out.Add("## Copilot Studio agents")
+if (-not $bots) { $out.Add("_None found._"); $out.Add("") }
+else {
+  $seenBots = @{}
+  foreach ($b in $bots) {
+    $botDir = Split-Path $b -Parent
+    $schemaName = Split-Path $botDir -Leaf
+    if ($seenBots[$schemaName]) { continue } else { $seenBots[$schemaName] = $true }
+    $display = $schemaName
+    $cfg = Join-Path $botDir "configuration.json"
+    if (Test-Path $cfg) {
+      try {
+        $c = Get-Content $cfg -Raw | ConvertFrom-Json
+        if ($c.displayName) { $display = $c.displayName } elseif ($c.name) { $display = $c.name }
+      } catch { }
+    }
+    $out.Add("### $display")
+    $out.Add("- Schema name: ``$schemaName``")
+    # Component inventory (topics / dialogs / actions) if present alongside the bot
+    $components = Get-ChildItem -Recurse -Path $botDir -Include *.json, *.yaml, *.yml -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -ne 'configuration.json' }
+    if ($components) { $out.Add("- Component files: $($components.Count)") }
+    $out.Add("- **Deep discovery:** route topics, actions, knowledge, and connected agents to the Copilot Studio specialists (Advisor/Author); this adapter only inventories the agent so it is never dropped.")
+    $out.Add("")
+  }
 }
 
 # --- Flows ---
@@ -102,4 +139,4 @@ foreach ($f in $defs) {
 Set-Content -Path $OutFile -Value ($out -join "`r`n") -Encoding UTF8
 Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 Write-Host "[OK] behavior evidence -> $OutFile" -ForegroundColor Green
-Write-Host "     Canvas apps: $($msapps.Count)   Flow definitions: $($defs.Count)" -ForegroundColor DarkGray
+Write-Host "     Canvas apps: $($msapps.Count)   Copilot Studio agents: $($bots.Count)   Flow definitions: $($defs.Count)" -ForegroundColor DarkGray
