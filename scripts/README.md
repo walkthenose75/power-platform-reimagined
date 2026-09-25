@@ -13,6 +13,8 @@ Prereqs: `pac` + `az` installed; `az login --tenant <target-tenant>`; System Cus
 | `export-source-solution.ps1` | **Tenant one-button:** export the named solution from the source env (unmanaged) and seed the workspace. Reads the brief with `-IntakePath`. | Tenant source ingest |
 | `analyze-artifacts.ps1` | **Discovery adapter:** unpack canvas `.msapp` (Power Fx) + flow `definition.json` from a source solution/repo and summarize real behavior into `behavior-evidence.md`. | During discovery (Phase 3) |
 | `ensure-solution.ps1` | **Solution-first:** create the publisher + unmanaged solution. | First mutation step |
+| `provision-tables.ps1` | **Generic table provisioner:** create tables, columns, and lookups INSIDE the solution from a JSON spec (`-SpecFile`). Types: string/memo/int/decimal/money/boolean/datetime + one-to-many lookups. Idempotent. | After ensure-solution |
+| `load-synthetic-data.ps1` | **Generic data loader:** load CSVs from a synthetic-data manifest (`-ManifestPath`), in `loadOrder`, resolving lookups by target key, type-aware, idempotent by key. | After the app is built |
 | `add-app-to-solution.ps1` | Add a deployed **code app** to the solution (push doesn't reliably do it). | Right after `pac code push` |
 | `audit-solution.ps1` | **Everything-in-solution audit:** list components (tables, app, flows, connection references) + gap-scan custom tables not in the solution. | After building, before publish |
 | `acceptance.ps1` | **Definition of done:** one verdict (`ACCEPTED` / `NOT ACCEPTED`) — solution complete (tables + app + connection refs), gap scan clean, demo data seeded, app reachable, publication sanitization clean. Pilot-agnostic (`-SolutionUnique`/`-Prefix` or `-IntakePath`). | After building, before publish |
@@ -30,12 +32,14 @@ Prereqs: `pac` + `az` installed; `az login --tenant <target-tenant>`; System Cus
   -PublisherUnique <pub> -PublisherFriendly "<Publisher>" -Prefix <prefix> `
   -SolutionUnique <Solution> -SolutionFriendly "<Solution Display>"
 
-# 2. create tables/choices with header  MSCRM.SolutionUniqueName=<Solution>   (see the pilot's provision script)
+# 2. create tables/columns/lookups INSIDE the solution from a JSON spec
+./scripts/provision-tables.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com -Solution <Solution> -SpecFile <tables.json>
 # 3. build + deploy the code app
 pac code push --environment https://<org>.crm.dynamics.com/ --solutionName <Solution>
 ./scripts/add-app-to-solution.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com -SolutionUnique <Solution> -AppId <app-id>
 
-# 4. connectors -> connection references in the solution (MSCRM.SolutionUniqueName header on the connectionreference)
+# 4. load synthetic data (manifest-driven, resolves lookups)
+./scripts/load-synthetic-data.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com -ManifestPath workspaces/<pilot>/synthetic-data/manifest.json
 # 5. VERIFY everything landed
 ./scripts/audit-solution.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com -SolutionUnique <Solution> -Prefix <prefix>
 

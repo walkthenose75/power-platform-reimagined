@@ -148,7 +148,7 @@ Generate reviewable CSV files, a manifest conforming to `schemas/synthetic-data-
 Build **solution-first** and keep **everything** in the one named unmanaged solution.
 
 1. **Create the container first:** `scripts/ensure-solution.ps1` (publisher + unmanaged solution).
-2. **Tables/choices:** create with the `MSCRM.SolutionUniqueName=<solution>` header so they land in it.
+2. **Tables/choices:** create with the `MSCRM.SolutionUniqueName=<solution>` header so they land in it. Use `scripts/provision-tables.ps1 -SpecFile <tables.json>` (generic: tables, columns, lookups).
 3. **Experiences:** implement custom experiences as **code apps** (never target canvas apps);
    retain or redesign approved model-driven experiences. Build the code-app UI with **Fluent UI 2**
    (`@fluentui/react-components` v9) by default — `FluentProvider`, Fluent components and
@@ -158,9 +158,12 @@ Build **solution-first** and keep **everything** in the one named unmanaged solu
    `scripts/add-app-to-solution.ps1` — push does **not** reliably add the app itself.
 5. **Connectors/flows/config:** add connectors as **connection references** in the solution;
    create flows and environment variables in the solution.
-6. **Verify:** run `scripts/audit-solution.ps1 -Prefix <prefix>`. Every table, the app, flows, and
+6. **Synthetic data:** load with `scripts/load-synthetic-data.ps1 -ManifestPath <manifest>` — it
+   is manifest-driven, resolves lookups by target key, is type-aware, and idempotent. Key the CSVs
+   to the **target** schema (Dataverse logical names or a `columnMap`).
+7. **Verify:** run `scripts/audit-solution.ps1 -Prefix <prefix>`. Every table, the app, flows, and
    connection references must appear, and the gap scan must be clean. Fix any gap before continuing.
-7. **Export:** unpacked source and the unmanaged solution package.
+8. **Export:** unpacked source and the unmanaged solution package.
 
 Do not create target canvas apps.
 
