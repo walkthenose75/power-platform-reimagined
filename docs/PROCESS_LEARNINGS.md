@@ -24,10 +24,12 @@ agents** + 2 Dataverse tables) — surfaced and drove these fixes:
 - **Dedupe canvas screens.** `pac canvas unpack` emits both `*.fx.yaml` and legacy `*.pa.yaml`,
   so every screen was reported twice. Fixed: prefer `.fx.yaml`, include a `.pa.yaml` only when no
   `.fx.yaml` exists, and show a clean screen name.
-- **Backlog (open): the source zip gets copied twice.** The wizard uploads + unpacks to
-  `inbox/<pilot>/` (zip + `unpacked/`), then `start --zip` copies the same zip again into
-  `workspaces/<pilot>/evidence/source/` and ignores the already-unpacked content. For big
-  solutions, have `start --zip` reuse the wizard's unpack (or seed the workspace directly).
+- **Fixed: the source zip no longer gets copied twice.** The wizard uploads + unpacks to
+  `inbox/<pilot>/` (zip + `unpacked/`); `start --zip` now **moves** that staged zip (and its
+  unpack) into `workspaces/<pilot>/evidence/source/` and clears the inbox staging dir, so there is
+  a single copy in the self-contained workspace. A standalone CLI zip (outside `inbox/`) is still
+  **copied**, never disturbed. Preflight accepts either the inbox path or the workspace evidence
+  copy.
 
 ## Discovery depth — UNPACK the real packages, not just the docs (CRITICAL)
 

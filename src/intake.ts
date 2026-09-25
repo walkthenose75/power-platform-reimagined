@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { type IntakePayload, kickoff } from "./intake-kickoff.js";
@@ -117,7 +117,36 @@ export async function startFromZip(options: ZipStartOptions): Promise<void> {
   const sourceDirectory = path.join(output, "evidence", "source");
   await mkdir(sourceDirectory, { recursive: true });
   const destination = path.join(sourceDirectory, path.basename(zip));
-  await copyFile(zip, destination);
+
+  // If the wizard staged this zip under inbox/, MOVE it into the workspace (no second 30MB+
+  // copy) and relocate any wizard-unpacked artifacts, then clear the staging dir. For a
+  // standalone CLI zip anywhere else, COPY so the user's file is never disturbed.
+  const inboxRoot = path.resolve("inbox");
+  const stagedInInbox = zip.startsWith(`${inboxRoot}${path.sep}`);
+  let movedFromInbox = false;
+  if (stagedInInbox) {
+    try {
+      await rename(zip, destination);
+      movedFromInbox = true;
+    } catch {
+      await copyFile(zip, destination);
+    }
+    const stagedDir = path.dirname(zip);
+    const unpackedSrc = path.join(stagedDir, "unpacked");
+    try {
+      if ((await stat(unpackedSrc)).isDirectory()) {
+        await rename(unpackedSrc, path.join(sourceDirectory, "unpacked")).catch(() => undefined);
+      }
+    } catch {
+      /* no wizard-unpacked dir */
+    }
+    if (movedFromInbox) {
+      await rm(stagedDir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  } else {
+    await copyFile(zip, destination);
+  }
+
   const digest = await sha256(destination);
   const initOptions: InitOptions = {
     name: options.name,

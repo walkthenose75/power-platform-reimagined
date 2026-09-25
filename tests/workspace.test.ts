@@ -56,6 +56,35 @@ test("starts from a ZIP and records source provenance", async () => {
     assert.equal(model.source.zipPath, "evidence/source/FabrikamCare.zip");
     assert.match(model.source.sha256, /^[a-f0-9]{64}$/);
     assert.match(await readFile(path.join(workspace, "KICKOFF.md"), "utf8"), /Current gate/);
+    // A standalone zip (outside inbox/) is COPIED, never removed.
+    assert.equal(await readFile(zip, "utf8"), "fictitious solution package");
+  });
+});
+
+test("a wizard-staged inbox ZIP is MOVED into the workspace (no duplicate) with its unpack", async () => {
+  await withTempDirectory(async (directory) => {
+    const inboxRoot = path.resolve("inbox");
+    const stagedDir = path.join(inboxRoot, `__move-test-${Date.now()}`);
+    const zip = path.join(stagedDir, "Staged.zip");
+    const unpacked = path.join(stagedDir, "unpacked");
+    const workspace = path.join(directory, "assessment");
+    await mkdir(unpacked, { recursive: true });
+    await writeFile(zip, "staged solution package", "utf8");
+    await writeFile(path.join(unpacked, "solution.xml"), "<ImportExportXml/>", "utf8");
+
+    try {
+      await startFromZip({ name: "Staged Pilot", zip, output: workspace });
+
+      // Moved into the workspace evidence, and the inbox staging dir is gone (no duplicate copy).
+      assert.equal(await readFile(path.join(workspace, "evidence", "source", "Staged.zip"), "utf8"), "staged solution package");
+      assert.equal(
+        await readFile(path.join(workspace, "evidence", "source", "unpacked", "solution.xml"), "utf8"),
+        "<ImportExportXml/>"
+      );
+      await assert.rejects(readFile(zip, "utf8"));
+    } finally {
+      await rm(stagedDir, { recursive: true, force: true });
+    }
   });
 });
 

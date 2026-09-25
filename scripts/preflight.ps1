@@ -154,11 +154,19 @@ if ($SourceRepositoryUrl) {
 }
 if ($SourceZipPath) {
   Write-Host "`n== Source ZIP ==" -ForegroundColor Cyan
-  if (Test-Path $SourceZipPath) {
-    $len = (Get-Item $SourceZipPath).Length
-    if ($len -gt 0) { Say PASS "Uploaded ZIP present" "$SourceZipPath ($([math]::Round($len/1KB)) KB)" }
-    else { Say FAIL "Uploaded ZIP present" "file is empty: $SourceZipPath" }
-  } else { Say FAIL "Uploaded ZIP present" "not found: $SourceZipPath (re-run the wizard upload)" }
+  # After seeding, `start --zip` moves the wizard's inbox zip into the workspace evidence, so
+  # accept either the original inbox path or the workspace copy.
+  $candidates = @($SourceZipPath)
+  if ($IntakePath) {
+    $wsDir = Split-Path -Parent (Resolve-Path $IntakePath)
+    $candidates += (Join-Path $wsDir (Join-Path "evidence\source" (Split-Path -Leaf $SourceZipPath)))
+  }
+  $found = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if ($found) {
+    $len = (Get-Item $found).Length
+    if ($len -gt 0) { Say PASS "Source ZIP present" "$found ($([math]::Round($len/1KB)) KB)" }
+    else { Say FAIL "Source ZIP present" "file is empty: $found" }
+  } else { Say FAIL "Source ZIP present" "not found at $SourceZipPath (or the workspace evidence copy) - re-run the wizard upload or 'start --zip'" }
 }
 
 # --- Enablement & licensing ---
