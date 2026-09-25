@@ -14,7 +14,8 @@ Prereqs: `pac` + `az` installed; `az login --tenant <target-tenant>`; System Cus
 | `export-source-solution.ps1` | **Tenant one-button:** export the named solution from the source env (unmanaged) and seed the workspace. Reads the brief with `-IntakePath`. | Tenant source ingest |
 | `analyze-artifacts.ps1` | **Discovery adapter:** unpack canvas `.msapp` (Power Fx) + flow `definition.json` from a source solution/repo and summarize real behavior into `behavior-evidence.md`. | During discovery (Phase 3) |
 | `ensure-solution.ps1` | **Solution-first:** create the publisher + unmanaged solution. | First mutation step |
-| `provision-tables.ps1` | **Generic table provisioner:** create tables, columns, and lookups INSIDE the solution from a JSON spec (`-SpecFile`). Types: string/memo/int/decimal/money/boolean/datetime + one-to-many lookups. Idempotent. | After ensure-solution |
+| `provision-tables.ps1` | **Generic table provisioner:** create tables, columns, and lookups INSIDE the solution from a JSON spec (`-SpecFile`). Types: string/memo/int/decimal/money/boolean/datetime/image/file + one-to-many lookups. Idempotent. | After ensure-solution |
+| `build-agent.ps1` | **Agent-as-code:** scaffold a new-experience CliCopilot agent (GitHub Copilot harness) with generated instructions, pack it, and import it **into the solution** (`pac copilot init`/`pack` + `solution import`). | When agents are in scope |
 | `load-synthetic-data.ps1` | **Generic data loader:** load CSVs from a synthetic-data manifest (`-ManifestPath`), in `loadOrder`, resolving lookups by target key, type-aware, idempotent by key. | After the app is built |
 | `add-app-to-solution.ps1` | Add a deployed **code app** to the solution (push doesn't reliably do it). | Right after `pac code push` |
 | `audit-solution.ps1` | **Everything-in-solution audit:** list components (tables, app, flows, connection references) + gap-scan custom tables not in the solution. | After building, before publish |

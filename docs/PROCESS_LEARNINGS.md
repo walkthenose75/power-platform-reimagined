@@ -79,6 +79,24 @@ Reviewing the built Inventory app surfaced three quality rules (now in the SKILL
   Default to **master–detail** (detail panel with the image + all fields) and **actionable
   dashboards** (click-through + a primary action like **Reorder**). Never lose a source screen.
 
+### Copilot Studio agents ARE code-authorable (build them, don't punt)
+
+`pac copilot` is a full code-first agent lifecycle. Verified live on the Inventory pilot — a real
+agent was built as code and imported **into the solution and the environment**:
+
+- `pac copilot init --authoring-mode cli-copilot --instructions "<one line>"` scaffolds a
+  **new-experience CliCopilot** agent (`settings.mcs.yml`) on a **Sonnet-class model** (the GitHub
+  Copilot harness). **Multi-line instructions break the CLI arg** — seed with one line, then inject
+  the full instructions into `settings.mcs.yml` as a YAML block scalar (what `build-agent.ps1` does).
+- `pac copilot pack --solution-name <sol> --output-path <dir>` writes `<dir>/<sol>.zip` (output-path
+  is a **directory**); `pac solution import --path <that zip>` deploys the agent **into the named
+  unmanaged solution**. It shows up as solution **component type 10225** (Agent).
+- **Manual last mile (OAuth consent — can't be code):** add the **Dataverse MCP tool** (Build →
+  Tools → Add a tool → MCP → Dataverse → authorize connection), publish, pick a channel, embed.
+  `AGENT_BUILD.md` (`npm run reimagine -- agent-guide`) generates these steps + a refinement prompt.
+- Kit: `scripts/build-agent.ps1` (init→inject→pack→import), `src/agent-build.ts` +
+  `reimagine agent-guide`, and audit/acceptance now recognize component type 10225.
+
 ## Discovery depth — UNPACK the real packages, not just the docs (CRITICAL)
 
 The single biggest miss on the pilot: I first reconstructed behavior from **README/docs + setup

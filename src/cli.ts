@@ -2,6 +2,7 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { startFromRepository, startFromZip } from "./intake.js";
 import type { IntakePayload } from "./intake-kickoff.js";
+import { renderAgentBuild } from "./agent-build.js";
 import { packagePublication, renderPackageReport } from "./package.js";
 import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
 import { scanPath } from "./sanitizer.js";
@@ -44,6 +45,7 @@ function printUsage(): void {
   reimagine init --name <name> --source <tenant|repository|new-concept> --output <directory>
   reimagine validate --workspace <directory>
   reimagine manual-guide [--workspace <directory>] [--out <file>]   # UI/manual steps the agent can't automate
+  reimagine agent-guide [--workspace <directory>] [--out <file>]    # Copilot Studio agent build + finish guide
   reimagine package [--workspace <directory>] [--out <directory>]   # assemble the GitHub/Solution Hub bundle
   reimagine scan --path <directory>`);
 }
@@ -141,8 +143,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (command === "manual-guide") {
-    const workspace = optionalValueOf(args, "--workspace")
+  if (command === "manual-guide") {    const workspace = optionalValueOf(args, "--workspace")
       ? path.resolve(valueOf(args, "--workspace"))
       : await findNewestWorkspace();
     if (!workspace) {
@@ -160,6 +161,25 @@ async function main(): Promise<void> {
       : path.join(workspace, "MANUAL_STEPS.md");
     await writeFile(outFile, guide, "utf8");
     console.log(`Manual-steps guide written to ${outFile}`);
+    return;
+  }
+
+  if (command === "agent-guide") {
+    const workspace = optionalValueOf(args, "--workspace")
+      ? path.resolve(valueOf(args, "--workspace"))
+      : await findNewestWorkspace();
+    if (!workspace) {
+      throw new Error("No workspace found. Pass --workspace <directory>.");
+    }
+    const intake = (await readJsonFile(path.join(workspace, "intake.json"))) as IntakePayload | null;
+    if (!intake || !intake.pilotName) {
+      throw new Error(`No intake.json in ${workspace}. The agent guide needs the intake brief.`);
+    }
+    const outFile = optionalValueOf(args, "--out")
+      ? path.resolve(valueOf(args, "--out"))
+      : path.join(workspace, "AGENT_BUILD.md");
+    await writeFile(outFile, renderAgentBuild(intake), "utf8");
+    console.log(`Agent build guide written to ${outFile}`);
     return;
   }
 

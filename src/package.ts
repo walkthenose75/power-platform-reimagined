@@ -1,6 +1,7 @@
 import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { IntakePayload } from "./intake-kickoff.js";
+import { renderAgentBuild } from "./agent-build.js";
 import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
 import { type PublishTarget, renderPublishTarget } from "./publish.js";
 import { scanPath } from "./sanitizer.js";
@@ -176,6 +177,10 @@ export async function packagePublication(workspace: string, options: { outDir?: 
   if (intake?.pilotName) {
     const recorded = (model?.manualSteps as RecordedManualStep[] | undefined) ?? [];
     await write("MANUAL_STEPS.md", renderManualGuide(pilotName, intake as unknown as IntakePayload, recorded));
+    const agents = (intake as unknown as IntakePayload).target?.agents;
+    if (agents && (agents.copilotStudio || agents.m365Copilot)) {
+      await write("AGENT_BUILD.md", renderAgentBuild(intake as unknown as IntakePayload));
+    }
   }
 
   if (await copyDirIfPresent(path.join(workspace, "synthetic-data", "csv"), path.join(outputDir, "synthetic-data"))) {

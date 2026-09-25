@@ -170,13 +170,16 @@ Build **solution-first** and keep **everything** in the one named unmanaged solu
    `scripts/add-app-to-solution.ps1` — push does **not** reliably add the app itself.
 5. **Connectors/flows/config:** add connectors as **connection references** in the solution;
    create flows and environment variables in the solution.
-5a. **Agents (do not skip):** when Copilot Studio / M365 Copilot agents are in scope, **author them**,
-   don't just document them. In the **Standard harness**, route to the Copilot Studio specialists
-   (Author for YAML, Manage for clone/pull/push/publish, Test for evaluation) to build the agent
-   (instructions, topics, tools) and push it into the solution. For a Dataverse‑grounded agent,
-   author it to use the **Dataverse MCP Server** tool. Only the connection consent + final
-   publish/approval are manual (record them in `manualSteps` → `MANUAL_STEPS.md`). In the **GitHub
-   Copilot harness**, author the agent YAML interactively and treat push/publish as manual.
+5a. **Agents (do not skip):** when Copilot Studio / M365 Copilot agents are in scope, **build them
+   as code**, don't just document them. Compose tailored instructions (from discovery + intake
+   industry + the target tables + tasks) into a file, then
+   `scripts/build-agent.ps1 -InstructionsFile <file> -Solution <solution> -PublisherPrefix <prefix>`
+   — it scaffolds a new‑experience **CliCopilot** agent (`pac copilot init --authoring-mode
+   cli-copilot`, Sonnet model / GitHub Copilot harness), packs it (`pac copilot pack --solution-name`),
+   and imports it **into the solution**. Then generate `AGENT_BUILD.md`
+   (`npm run reimagine -- agent-guide`) for the one‑time manual last mile — add the **Dataverse MCP
+   tool + authorize the connection**, publish, choose a channel, and embed in the code app (OAuth
+   consent is inherently manual). Default agents to the **GitHub Copilot harness**.
 6. **Synthetic data:** load with `scripts/load-synthetic-data.ps1 -ManifestPath <manifest>` — it
    is manifest-driven, resolves lookups by target key, is type-aware, and idempotent. Key the CSVs
    to the **target** schema (Dataverse logical names or a `columnMap`).

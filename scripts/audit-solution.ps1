@@ -24,7 +24,7 @@ $typeNames = @{
   1 = "Table"; 2 = "Column"; 9 = "Choice (global)"; 20 = "Security Role"; 29 = "Cloud flow / Workflow";
   59 = "Chart"; 60 = "Form"; 61 = "Web Resource"; 62 = "Site Map"; 70 = "Field Security Profile";
   80 = "Model-driven app"; 300 = "Canvas/Code app"; 371 = "Connector"; 372 = "Connector";
-  380 = "Environment Variable (def)"; 381 = "Environment Variable (value)"; 10163 = "Connection Reference"
+  380 = "Environment Variable (def)"; 381 = "Environment Variable (value)"; 10163 = "Connection Reference"; 10225 = "Agent (Copilot Studio)"
 }
 
 $sol = Get-Dv "$baseUrl/solutions?`$filter=uniquename eq '$SolutionUnique'&`$select=solutionid,friendlyname,ismanaged"

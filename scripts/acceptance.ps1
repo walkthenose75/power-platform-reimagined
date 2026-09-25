@@ -55,11 +55,12 @@ Say PASS "Solution exists" "$($sol.value[0].friendlyname) (managed=$($sol.value[
 
 $comps = (Get-Dv "$base/solutioncomponents?`$filter=_solutionid_value eq $sid&`$select=componenttype,objectid").value
 $countType = { param($t) @($comps | Where-Object { [int]$_.componenttype -eq $t }).Count }
-$tables = & $countType 1; $apps = & $countType 300; $connrefs = & $countType 10163; $flows = & $countType 29
+$tables = & $countType 1; $apps = & $countType 300; $connrefs = & $countType 10163; $flows = & $countType 29; $agents = & $countType 10225
 
 Write-Host "`n== 1. Solution complete ==" -ForegroundColor Cyan
 if ($tables -gt 0) { Say PASS "Tables in solution" "$tables" } else { Say FAIL "Tables in solution" "none - the data model must live in the solution" }
 if ($apps -gt 0) { Say PASS "Code app in solution" "$apps (component type 300)" } else { Say FAIL "Code app in solution" "not found - add it: Solutions > $SolutionUnique > Add existing > App (or add-app-to-solution.ps1)" }
+if ($agents -gt 0) { Say PASS "Copilot Studio agent(s)" "$agents (component type 10225)" }
 if ($connrefs -gt 0) { Say PASS "Connection reference(s)" "$connrefs" } else { Say WARN "Connection reference(s)" "none (fine only if the app uses no connectors)" }
 if ($flows -gt 0) { Say PASS "Cloud flow(s)" "$flows" } else { Say WARN "Cloud flow(s)" "none (fine if none were built)" }
 
