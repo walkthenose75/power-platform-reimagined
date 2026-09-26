@@ -58,6 +58,25 @@ function Coerce($type, $value) {
   }
 }
 
+# Resolve a choice (Picklist) label -> option value from metadata (cached). Choice columns need the
+# numeric option value on the Web API, not the label.
+$pickCache = @{}
+function PicklistValue($logical, $attr, $label) {
+  $key = "$logical/$attr"
+  if (-not $pickCache.ContainsKey($key)) {
+    $map = @{}
+    try {
+      $os = GetDv "$base/EntityDefinitions(LogicalName='$logical')/Attributes(LogicalName='$attr')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?`$expand=OptionSet(`$select=Options)"
+      foreach ($o in $os.OptionSet.Options) { $lbl = $o.Label.UserLocalizedLabel.Label; if ($lbl) { $map[$lbl.ToLower()] = [int]$o.Value } }
+    } catch { }
+    $pickCache[$key] = $map
+  }
+  $mm = $pickCache[$key]
+  $lk = ([string]$label).Trim().ToLower()
+  if ($mm.ContainsKey($lk)) { return $mm[$lk] }
+  return $null
+}
+
 $total = 0
 foreach ($ent in ($manifest.entities | Sort-Object loadOrder)) {
   $logical = $ent.logicalName
@@ -91,7 +110,13 @@ foreach ($ent in ($manifest.entities | Sort-Object loadOrder)) {
       }
       $logicalCol = if ($colMap.ContainsKey($header)) { $colMap[$header] } else { $header }
       if (-not $m.Types.ContainsKey($logicalCol)) { continue }  # skip columns not on the table
-      $rec[$logicalCol] = Coerce $m.Types[$logicalCol] $value
+      if ("$($m.Types[$logicalCol])" -eq "Picklist") {
+        $pv = PicklistValue $logical $logicalCol $value
+        if ($null -ne $pv) { $rec[$logicalCol] = $pv }
+        elseif ("$value" -ne "") { Write-Host "  [WARN] choice '$value' not found for $logicalCol" -ForegroundColor Yellow }
+      } else {
+        $rec[$logicalCol] = Coerce $m.Types[$logicalCol] $value
+      }
       if ($logicalCol -eq $keyLogical) { $keyValue = [string]$value }
     }
     if ($keyValue -and $existing.ContainsKey($keyValue)) { Write-Host "  [SKIP] $keyValue" -ForegroundColor Yellow; continue }
