@@ -1,9 +1,10 @@
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { startFromRepository, startFromZip } from "./intake.js";
 import type { IntakePayload } from "./intake-kickoff.js";
 import { renderAgentBuild } from "./agent-build.js";
 import { scaffoldPlan } from "./plan-scaffold.js";
+import { mapSharePointToDataverse, type SpSchema } from "./sharepoint-map.js";
 import { packagePublication, renderPackageReport } from "./package.js";
 import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
 import { scanPath } from "./sanitizer.js";
@@ -45,6 +46,7 @@ function printUsage(): void {
   reimagine start --name <name> --inbox <directory> --output <directory>
   reimagine init --name <name> --source <tenant|repository|new-concept> --output <directory>
   reimagine plan-scaffold [--workspace <directory>]    # seed a valid draft target model for plan mode (new-concept)
+  reimagine sharepoint-map --schema <schema.json> --prefix <p> [--workspace <dir>] [--out <tables.json>]   # SharePoint list schema -> Dataverse tables.json + column map
   reimagine validate --workspace <directory>
   reimagine manual-guide [--workspace <directory>] [--out <file>]   # UI/manual steps the agent can't automate
   reimagine agent-guide [--workspace <directory>] [--out <file>] [--tables a,b] [--built] [--prefix inv] [--solution Name]    # Copilot Studio agent build + finish guide
@@ -137,6 +139,40 @@ async function main(): Promise<void> {
         "(owner-confirmation evidence + target-surface decision). " +
         "Extend components/featureOpportunities in plan mode, citing evidence:intake-brief."
     );
+    return;
+  }
+
+  if (command === "sharepoint-map") {
+    const prefix = valueOf(args, "--prefix");
+    const schemaPath = path.resolve(valueOf(args, "--schema"));
+    const schema = (await readJsonFile(schemaPath)) as unknown as SpSchema | null;
+    if (!schema || !Array.isArray(schema.lists)) {
+      throw new Error(`No SharePoint schema at ${schemaPath}. Produce it with scripts/read-sharepoint-list.ps1.`);
+    }
+    const workspace = optionalValueOf(args, "--workspace")
+      ? path.resolve(valueOf(args, "--workspace"))
+      : await findNewestWorkspace();
+    const result = mapSharePointToDataverse(schema, { prefix });
+    const outTables = optionalValueOf(args, "--out")
+      ? path.resolve(valueOf(args, "--out"))
+      : workspace
+        ? path.join(workspace, "generated", "target-state", "tables.json")
+        : path.resolve("tables.json");
+    await mkdir(path.dirname(outTables), { recursive: true });
+    await writeFile(outTables, `${JSON.stringify({ tables: result.tables }, null, 2)}\n`, "utf8");
+    const outMap = workspace
+      ? path.join(workspace, "generated", "current-state", "sharepoint-column-map.json")
+      : path.resolve("sharepoint-column-map.json");
+    await mkdir(path.dirname(outMap), { recursive: true });
+    await writeFile(outMap, `${JSON.stringify({ columnMap: result.columnMap, decisions: result.decisions }, null, 2)}\n`, "utf8");
+    console.log(`Mapped ${schema.lists.length} SharePoint list(s) -> ${result.tables.length} Dataverse table(s).`);
+    console.log(`  tables spec:  ${outTables}`);
+    console.log(`  column map:   ${outMap}`);
+    if (result.decisions.length) {
+      console.log(`  decisions (${result.decisions.length}) — review these simplifications:`);
+      for (const d of result.decisions) console.log(`    - ${d.title}`);
+    }
+    console.log(`Next: provision the tables — scripts/provision-tables.ps1 -EnvironmentUrl <env> -Solution <sol> -SpecFile "${outTables}"`);
     return;
   }
 

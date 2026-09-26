@@ -175,6 +175,25 @@ Keep baseline behavior separate from net-new functionality. Stop at the feature-
 
 Map each current capability to retain, redesign, replace, consolidate, or retire. Convert canvas behavior into code-app requirements. Evaluate model-driven apps on native fit. Assess each SharePoint list or library before moving it to Dataverse.
 
+**SharePoint lists → Dataverse (the bridge).** For a SharePoint-backed source, read the list schema
+and map it to Dataverse tables — read-only, **schema only** (no list rows; synthetic data is generated
+later):
+
+```powershell
+./scripts/read-sharepoint-list.ps1 -SiteUrl https://<tenant>.sharepoint.com/sites/<site> [-ListName "<list>"] -OutFile <ws>/generated/current-state/sharepoint-schema.json
+npm run reimagine -- sharepoint-map --schema <ws>/generated/current-state/sharepoint-schema.json --prefix <p> --workspace <ws>
+```
+
+The reader signs in with a **Microsoft Graph device code** (Sites.Read.All) and the mapper writes a
+`tables.json` (for `provision-tables.ps1`) + a source→target **column map** + the **decisions** it
+took. Type map: Title→**primary**; text→string; multi-line→memo; number→int/decimal; currency→money;
+choice→**choice**; multi-choice→choice *(+decision)*; yes/no→boolean; date/datetime→datetime;
+**person→text (display name)** *(no real user link; synthesize names)*; **lookup→Dataverse lookup only
+if the referenced list is also in scope** (referenced table is provisioned first; otherwise flatten to
+text); calculated/rollup→**skipped** (recompute in the app); hyperlink→string; picture→image;
+attachments→file. **Review the decisions** (simplifications) before building; then provision the tables
+and generate synthetic data.
+
 **Reimagine means better, not just a CRUD list.** Default the code app to strong UX patterns:
 **master–detail** (a list plus a detail panel that shows every field, including images/files),
 **actionable dashboards** (rows click through to detail and expose primary actions — e.g., a
