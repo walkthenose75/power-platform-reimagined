@@ -40,3 +40,20 @@ test("agent guide omits the M365 admin step when no M365 agent", () => {
   assert.doesNotMatch(doc, /tenant admin approves/);
   assert.match(doc, /Microsoft Teams/);
 });
+
+test("agent guide grounds on the demo knowledge library URL when provided", () => {
+  const doc = renderAgentBuild(base, { built: true, knowledgeUrl: "https://demo.sharepoint.com/BME%20Demo%20Knowledge" });
+  assert.match(doc, /## 3\. Add knowledge/);
+  assert.match(doc, /portable demo knowledge library/);
+  assert.match(doc, /https:\/\/demo\.sharepoint\.com\/BME%20Demo%20Knowledge/);
+  assert.match(doc, /add-knowledge/);
+  // sections renumbered so Test/Publish/Embed shift down
+  assert.match(doc, /## 4\. Test it/);
+  assert.match(doc, /## 7\. Embed in the code app/);
+});
+
+test("agent guide falls back to generic knowledge guidance without a URL", () => {
+  const doc = renderAgentBuild(base, { built: true });
+  assert.match(doc, /## 3\. Add knowledge/);
+  assert.match(doc, /Upload\*\* sanitized files/);
+});

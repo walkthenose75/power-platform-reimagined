@@ -71,7 +71,7 @@ function printUsage(): void {
   reimagine demo-knowledge --source <dir> [--site <url>] [--library <name>] [--workspace <dir>] [--pilot <name>] [--out <plan.json>]   # plan a portable demo knowledge library + DEMO_KNOWLEDGE.md
   reimagine validate --workspace <directory>
   reimagine manual-guide [--workspace <directory>] [--out <file>]   # UI/manual steps the agent can't automate
-  reimagine agent-guide [--workspace <directory>] [--out <file>] [--tables a,b] [--built] [--prefix inv] [--solution Name]    # Copilot Studio agent build + finish guide
+  reimagine agent-guide [--workspace <directory>] [--out <file>] [--tables a,b] [--built] [--prefix inv] [--solution Name] [--knowledge-url <url>]    # Copilot Studio agent build + finish guide
   reimagine package [--workspace <directory>] [--out <directory>]   # assemble the GitHub/Solution Hub bundle
   reimagine scan --path <directory>`);
 }
@@ -348,11 +348,15 @@ async function main(): Promise<void> {
     const groundingTables = optionalValueOf(args, "--tables")
       ? valueOf(args, "--tables").split(",").map((t) => t.trim()).filter(Boolean)
       : undefined;
+    const demoResult = await readJsonFile(path.join(workspace, "generated", "target-state", "demo-knowledge-result.json"));
+    const knowledgeUrl = optionalValueOf(args, "--knowledge-url")
+      ?? (typeof demoResult?.libraryUrl === "string" ? (demoResult.libraryUrl as string) : undefined);
     const agentOptions = {
       ...(groundingTables ? { groundingTables } : {}),
       ...(args.includes("--built") ? { built: true } : {}),
       ...(optionalValueOf(args, "--prefix") ? { prefix: valueOf(args, "--prefix") } : {}),
-      ...(optionalValueOf(args, "--solution") ? { solution: valueOf(args, "--solution") } : {})
+      ...(optionalValueOf(args, "--solution") ? { solution: valueOf(args, "--solution") } : {}),
+      ...(knowledgeUrl ? { knowledgeUrl } : {})
     };
     await writeFile(outFile, renderAgentBuild(intake, agentOptions), "utf8");
     console.log(`Agent build guide written to ${outFile}`);

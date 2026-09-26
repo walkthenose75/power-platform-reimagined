@@ -8,6 +8,8 @@ export interface AgentBuildOptions {
   /** Publisher prefix + solution, for the build-agent command hint. */
   prefix?: string;
   solution?: string;
+  /** Demo knowledge library URL to ground on (from demo-knowledge-result.json), if published. */
+  knowledgeUrl?: string;
 }
 
 function agentKinds(intake: IntakePayload): { copilotStudio: boolean; m365: boolean } {
@@ -42,6 +44,7 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   const built = options.built ?? false;
   const prefix = options.prefix ?? "<prefix>";
   const solution = options.solution ?? "<Solution>";
+  const knowledgeUrl = options.knowledgeUrl;
   const industryLine = industry ? ` for a **${industry}** organization` : "";
   const tablesLine = tables.length ? tables.map((t) => `\`${t}\``).join(", ") : "the reimagined Dataverse tables";
 
@@ -94,14 +97,34 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   );
   lines.push("");
 
-  lines.push("## 3. Test it (Copilot Studio test pane)");
+  lines.push("## 3. Add knowledge (ground on documents)");
+  lines.push("");
+  if (knowledgeUrl) {
+    lines.push("Ground the agent on the **portable demo knowledge library** published for this pilot:");
+    lines.push("");
+    lines.push("1. In Copilot Studio → open the agent → **Knowledge** → **+ Add knowledge**.");
+    lines.push("2. Choose **SharePoint** (or **Website**) and paste the library URL:");
+    lines.push(`   \`${knowledgeUrl}\``);
+    lines.push("3. Add a name + a clear description, then **Add**. (This is the `add-knowledge` skill's SharePoint path.)");
+    lines.push("");
+    lines.push("> The library holds only synthetic/sanitized documents, so the demo carries no customer content.");
+  } else {
+    lines.push("Ground the agent on documents so it can answer policy / how-to questions:");
+    lines.push("");
+    lines.push("1. In Copilot Studio → open the agent → **Knowledge** → **+ Add knowledge**.");
+    lines.push("2. **Upload** sanitized files, or add a **SharePoint / Website** source (see `KNOWLEDGE.md` / `DEMO_KNOWLEDGE.md`).");
+    lines.push("3. Give each source a clear description — it drives generative orchestration.");
+  }
+  lines.push("");
+
+  lines.push("## 4. Test it (Copilot Studio test pane)");
   lines.push("");
   lines.push("With the tool added, try these in **Test your agent**:");
   lines.push("");
   for (const p of testPrompts(intake, tables)) lines.push(`- "${p}"`);
   lines.push("");
 
-  lines.push("## 4. Refine the agent (optional) — paste into the Build tab");
+  lines.push("## 5. Refine the agent (optional) — paste into the Build tab");
   lines.push("");
   lines.push("To expand behavior, paste this into the agent's **Build** (describe/refine) box:");
   lines.push("");
@@ -115,7 +138,7 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   lines.push("```");
   lines.push("");
 
-  lines.push("## 5. Publish + channels");
+  lines.push("## 6. Publish + channels");
   lines.push("");
   if (built) {
     lines.push("The agent is already **Published** (the build script publishes it). Re-publish after any change.");
@@ -126,7 +149,7 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   if (copilotStudio || !m365) lines.push("- Enable the channel(s) you need — **Microsoft Teams** and/or a **Custom website** (for the code-app embed below).");
   lines.push("");
 
-  lines.push("## 6. Embed in the code app");
+  lines.push("## 7. Embed in the code app");
   lines.push("");
   lines.push(
     "The code app's **Assistant** tab renders the agent as soon as its embed URL is set — no code change " +
