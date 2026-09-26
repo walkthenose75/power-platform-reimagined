@@ -15,7 +15,8 @@ import { initializeWorkspace } from "./workspace.js";
 
 async function readJsonFile(file: string): Promise<Record<string, unknown> | null> {
   try {
-    return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
+    // PowerShell (Set-Content -Encoding UTF8 on PS 5.1) prepends a UTF-8 BOM that JSON.parse rejects.
+    return JSON.parse((await readFile(file, "utf8")).replace(/^\uFEFF/, "")) as Record<string, unknown>;
   } catch {
     return null;
   }

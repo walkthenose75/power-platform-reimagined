@@ -104,6 +104,22 @@ function isTitle(c: SpColumn): boolean {
   return c.name.toLowerCase() === "title" || c.displayName.trim().toLowerCase() === "title";
 }
 
+/**
+ * SharePoint plumbing columns that Graph sometimes returns without a recognizable facet (so they
+ * arrive as `unknown`). These are never business data and must never become Dataverse columns.
+ * `Attachments` is intentionally NOT here — it maps to a Dataverse file column (see the switch).
+ */
+const SYSTEM_COLUMN_NAMES = new Set([
+  "contenttype", "edit", "docicon", "linktitle", "linktitlenomenu",
+  "linkfilename", "linkfilenamenomenu", "itemchildcount", "folderchildcount",
+  "_uiversionstring", "appauthor", "appeditor", "complianceassetid",
+  "_complianceflags", "_compliancetag", "_commentcount", "_likecount"
+]);
+
+function isSystemColumn(c: SpColumn): boolean {
+  return SYSTEM_COLUMN_NAMES.has(c.name.toLowerCase());
+}
+
 /** Map one SharePoint schema (one or more lists) into Dataverse table specs. */
 export function mapSharePointToDataverse(schema: SpSchema, opts: { prefix: string }): MapResult {
   const prefix = opts.prefix.toLowerCase();
@@ -128,6 +144,7 @@ export function mapSharePointToDataverse(schema: SpSchema, opts: { prefix: strin
 
     for (const col of list.columns) {
       if (isTitle(col)) continue; // already the primary
+      if (isSystemColumn(col)) continue; // SharePoint plumbing — never a Dataverse column
       const dvSchema = dvName(prefix, col.displayName);
       const push = (type: DvColumnType, extra: Partial<DvColumnSpec> = {}, note?: string): void => {
         columns.push({ schemaName: dvSchema, displayName: col.displayName, type, ...(col.required ? { required: true } : {}), ...extra });
@@ -198,6 +215,7 @@ export function mapSharePointToDataverse(schema: SpSchema, opts: { prefix: strin
           break;
         case "attachments":
           push("file", {}, "list attachments mapped to a file column");
+          decisions.push({ title: `Attachments mapped to a file column: ${list.displayName}`, detail: "SharePoint list attachments (0..N files per item) are represented as a single Dataverse file column for the demo; remove it if attachments aren't needed." });
           break;
         default:
           push("string", {}, `unrecognized SharePoint type mapped to text`);

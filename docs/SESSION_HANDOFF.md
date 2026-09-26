@@ -1,6 +1,6 @@
 # Session Handoff — resume point
 
-_Last updated: 2026‑09‑25 (session: kit hardening + Inventory v2 pilot + SharePoint bridge design)._
+_Last updated: 2026‑09‑25 (session: kit hardening + Inventory v2 pilot + SharePoint bridge design + **live‑validated lists→Dataverse adapter**)._
 Read this first to resume with **zero drift**. It is the single source of truth for where we are.
 
 ## TL;DR
@@ -8,20 +8,23 @@ Read this first to resume with **zero drift**. It is the single source of truth 
 The **Power Platform Reimagined** kit is mature and battle‑tested. This session hardened it
 end‑to‑end, ran a **second full pilot** (Inventory Tracking v2) through all 9 gates to a published,
 **directly importable** GitHub asset, and **empirically proved** the code‑app→solution limitation.
-We then **built the first SharePoint bridge capability** — the lists→Dataverse adapter (reader +
-mapper + CLI + tests); it needs a **live validation** against a real SharePoint site (below).
+We then **built and LIVE‑VALIDATED the first SharePoint bridge capability** — the lists→Dataverse
+adapter (reader + mapper + CLI + tests). A throwaway probe created real SharePoint lists (text/choice/
+currency/boolean/date + a resolved lookup, person, calculated), read them via Graph, mapped them, and
+deleted them — surfacing + fixing two live‑only bugs (BOM in the reader's JSON; system columns
+`ContentType`/`Attachments`). Clean first‑try end‑to‑end confirmed.
 
-- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **64 tests
+- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **65 tests
   green** (`npm run check`), working tree **clean and in sync with origin**.
 - **Demos (public, importable):** `walkthenose75/virtual-rounding`, `walkthenose75/inventory-tracker-go`.
 - **Tenant:** Skunkworks POC `https://orgfd452920.crm.dynamics.com/` (env `db02e4be‑e8d1‑e733‑bbac‑10384a8f4212`,
   tenant `505fd4e7‑74f6‑4aec‑9c0e‑3ed624c84faf`), active `pac` + `az` as `admin@diax56912972.onmicrosoft.com`.
 
-## ⏭ NEXT: live‑validate the SharePoint **lists → Dataverse** adapter (BUILT)
+## ✅ DONE: SharePoint **lists → Dataverse** adapter (BUILT + LIVE‑VALIDATED)
 
-We're designing a "SharePoint bridge" (read‑only source ingestion, since SharePoint isn't a target
-workload). Three capabilities were scoped; **we chose to build lists→Dataverse first**. Design is
-**LOCKED** — do not re‑litigate, just build:
+The "SharePoint bridge" (read‑only source ingestion, since SharePoint isn't a target workload). Three
+capabilities were scoped; **capability (1) lists→Dataverse is complete and live‑validated**. Design is
+**LOCKED** — do not re‑litigate:
 
 - **Source:** a **LIVE SharePoint site** (not PnP scripts for v1).
 - **Auth:** **Microsoft Graph device‑code sign‑in** (SE signs in; least setup, cross‑platform).
@@ -40,19 +43,27 @@ workload). Three capabilities were scoped; **we chose to build lists→Dataverse
   recreated (recompute in app)** · Attachments→file/notes.
 - **Locked defaults:** person→text/synthetic; multi‑value lookups→simplify; **no source rows** (read
   schema only, generate synthetic data).
-- **BUILT this session (commit `7d21509`):** `scripts/read-sharepoint-list.ps1` (Graph device‑code →
-  normalized schema JSON), `src/sharepoint-map.ts` (pure deterministic mapper → `tables.json` +
-  source→target column map + decisions), `reimagine sharepoint-map` CLI, **5 mapper tests (64 total
-  green)**, and the SKILL type‑map docs. Verified end‑to‑end on a sample schema (lookup ordering,
-  choices, person‑flatten, calculated‑skip all correct).
-- **Remaining for lists→Dataverse: a LIVE validation** against a real SharePoint site — the SE runs
-  `./scripts/read-sharepoint-list.ps1 -SiteUrl https://<tenant>.sharepoint.com/sites/<site>`, completes
-  the **device‑code sign‑in** (Sites.Read.All), then `reimagine sharepoint-map --schema <out> --prefix
-  <p> --workspace <ws>` → `provision-tables.ps1` → synthetic‑data. (Needs a real site + interactive
-  sign‑in — do this next session with the operator.)
-- **Next SharePoint capabilities (scoped, not built):** (2) **docs → agent knowledge** (download →
-  sanitize → ground via the `add-knowledge` skill or upload); (3) **create a demo SharePoint site +
-  upload sanitized knowledge** for a portable, self‑contained demo.
+- **BUILT (commit `7d21509`) + hardened via live validation:** `scripts/read-sharepoint-list.ps1`
+  (Graph device‑code → normalized schema JSON), `src/sharepoint-map.ts` (pure deterministic mapper →
+  `tables.json` + source→target column map + decisions), `reimagine sharepoint-map` CLI, **6 mapper
+  tests (65 total green)**, and the SKILL type‑map docs.
+- **LIVE‑VALIDATED** on the tenant root site via a throwaway probe (created real lists → read via Graph
+  → mapped → deleted). **Two live‑only bugs found + fixed:**
+  1. **BOM** — the reader wrote JSON with `Set-Content -Encoding UTF8`, which on PS 5.1 prepends a
+     UTF‑8 BOM that `JSON.parse` rejects (CLI said "No SharePoint schema"). Fixed: reader now writes
+     BOM‑free via `[IO.File]::WriteAllText(..., UTF8Encoding($false))`, **and** the CLI strips a leading
+     BOM defensively (helps every PS‑written JSON in the kit).
+  2. **System columns** — `ContentType`/`Attachments` slipped past the readOnly/hidden filter as
+     `type=unknown` and would have become junk Dataverse columns. Fixed: reader skips a plumbing‑column
+     name set (`ContentType`, `Edit`, `DocIcon`, `Link*`, `_UIVersionString`, `Compliance*`, …) and
+     normalizes `Attachments`→`attachments`; mapper guards the same set and maps `attachments`→**file**
+     (with a decision). Confirmed: clean first‑try run, no BOM, `ContentType` gone, `Attachments`→file.
+  - To re‑validate: run the probe pattern in `workspaces/_sp-probe/run.ps1` (gitignored throwaway; the
+    device‑code client needs `Sites.Manage.All` to create+delete; read‑only use needs only
+    `Sites.Read.All`).
+- **⏭ NEXT SharePoint capability (2): docs → agent knowledge** (download → sanitize → ground via the
+  `add-knowledge` skill or upload); then (3) **create a demo SharePoint site + upload sanitized
+  knowledge** for a portable, self‑contained demo.
 
 ## This session's shipped work (all committed + pushed to the kit)
 

@@ -94,3 +94,30 @@ test("records decisions for simplifications and skips, and a full column map", (
   // Title tracked as the primary
   assert.ok(columnMap.some((c) => c.spName === "Title" && c.dvType === "primary"));
 });
+
+test("drops SharePoint plumbing columns and maps Attachments to a file column (live-derived)", () => {
+  const live: SpSchema = {
+    lists: [
+      {
+        name: "SPBridge Equipment",
+        displayName: "SPBridge Equipment",
+        columns: [
+          { name: "Title", displayName: "Title", type: "text", required: true },
+          { name: "AssetTag", displayName: "AssetTag", type: "text" },
+          { name: "Attachments", displayName: "Attachments", type: "attachments" },
+          { name: "ContentType", displayName: "Content Type", type: "unknown" }
+        ]
+      }
+    ]
+  };
+  const { tables, decisions } = mapSharePointToDataverse(live, { prefix: "spx" });
+  const eq = tables[0];
+  assert.ok(eq);
+  const names = eq.columns.map((c) => c.schemaName);
+  // ContentType is plumbing -> never a Dataverse column
+  assert.equal(names.includes("spx_ContentType"), false);
+  // Attachments -> a file column, with a visible decision
+  const attach = eq.columns.find((c) => c.schemaName === "spx_Attachments");
+  assert.equal(attach?.type, "file");
+  assert.ok(decisions.some((d) => /Attachments mapped to a file column/.test(d.title)));
+});
