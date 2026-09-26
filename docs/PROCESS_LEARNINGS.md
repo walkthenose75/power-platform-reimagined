@@ -308,6 +308,41 @@ The machine did have the **Power Platform CLI (`pac`)**, so we adapted to the **
   **choice/boolean fields + status**, with logic moved into the app or flows.
 - Flatten reference CSVs (Location/SubLocation) into **related Dataverse tables with lookups**.
 
+## SharePoint bridge — read-only source ingestion (all 3 capabilities live-validated)
+
+SharePoint isn't a target workload, but real solutions are SharePoint-backed. The bridge reads it via
+**Microsoft Graph device-code** sign-in (self-contained, no modules; public client
+`14d82eec-204b-4c2f-b7e8-296a70dab67e`). Three capabilities, each proven with a throwaway probe that
+provisions real SharePoint objects, exercises the code, and deletes them:
+
+1. **lists → Dataverse** — `scripts/read-sharepoint-list.ps1` + `src/sharepoint-map.ts` +
+   `reimagine sharepoint-map`. Schema-only (no rows); synthetic data generated later.
+2. **docs → agent knowledge** — `scripts/read-sharepoint-docs.ps1` + `src/knowledge-plan.ts` +
+   `reimagine knowledge-plan`. Classifies files against Copilot Studio rules (supported types;
+   **512 MB**/file; **500** files/agent); `KNOWLEDGE.md` guide; upload vs native-SharePoint modes.
+3. **portable demo knowledge** — `src/demo-knowledge.ts` + `reimagine demo-knowledge` +
+   `scripts/publish-demo-knowledge.ps1`. Sanitizer-gated create-library + upload on the demo tenant, so
+   a demo carries **no customer content**. Grounds via `add-knowledge`.
+
+Live-validation learnings (all found only by running against real SharePoint):
+
+- **PS 5.1 writes UTF-8 with a BOM** via `Set-Content -Encoding UTF8`, and `JSON.parse` rejects a
+  leading BOM. Write BOM-free (`[IO.File]::WriteAllText(path, json, (New-Object Text.UTF8Encoding $false))`),
+  and strip a leading BOM defensively when Node reads any PS-written JSON.
+- **Keep `.ps1` files pure ASCII in executable code.** Windows PowerShell 5.1 reads a BOM-less script
+  as ANSI (Windows-1252), so a UTF-8 em-dash (`—`) becomes mojibake (`â€"`) and breaks the parser (a
+  fatal `Unexpected token`). Em-dashes in `#` comments happen to be tolerated, but don't risk it. Guard
+  with a non-ASCII scan + `[System.Management.Automation.Language.Parser]::ParseFile(...)` before running.
+- **Graph returns system columns/plumbing** (`ContentType`, `Attachments`) that aren't marked
+  readOnly/hidden — filter them by name; map `Attachments`→a file column, skip `ContentType`.
+- **Graph document libraries = drives.** Enumerate `/sites/{id}/drives` (`driveType == documentLibrary`),
+  recurse `/items/{id}/children` for folders; derive a library-relative path by stripping everything up
+  to `root:` in `parentReference.path`. Create a library with `POST /sites/{id}/lists`
+  `{list:{template:documentLibrary}}`; upload with `PUT /drives/{id}/root:/{path}:/content` (`-InFile`).
+- **Sanitize-first is enforced in code:** `reimagine demo-knowledge` and `publish-demo-knowledge.ps1`
+  both refuse to publish if `reimagine scan` finds anything (it sets exit code 2). Raw downloads stay in
+  the gitignored workspace.
+
 ## Code app ALM — the app is NOT inside the classic solution export (IMPORTANT)
 
 Verified on the pilot: after `pac code push --solutionName VirtualRounding`, the exported

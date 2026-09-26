@@ -1,6 +1,6 @@
 # Session Handoff — resume point
 
-_Last updated: 2026‑09‑25 (session: kit hardening + Inventory v2 pilot + SharePoint bridge — **live‑validated lists→Dataverse AND docs→knowledge adapters**)._
+_Last updated: 2026‑09‑25 (session: kit hardening + Inventory v2 pilot + **SharePoint bridge COMPLETE — all 3 capabilities live‑validated**)._
 Read this first to resume with **zero drift**. It is the single source of truth for where we are.
 
 ## TL;DR
@@ -8,7 +8,7 @@ Read this first to resume with **zero drift**. It is the single source of truth 
 The **Power Platform Reimagined** kit is mature and battle‑tested. This session hardened it
 end‑to‑end, ran a **second full pilot** (Inventory Tracking v2) through all 9 gates to a published,
 **directly importable** GitHub asset, and **empirically proved** the code‑app→solution limitation.
-We then **built and LIVE‑VALIDATED the first two SharePoint bridge capabilities**:
+We then **built and LIVE‑VALIDATED the entire SharePoint bridge (all 3 capabilities)**:
 1. **lists → Dataverse** (reader + mapper + CLI). A throwaway probe created real lists (text/choice/
    currency/boolean/date + a resolved lookup, person, calculated), read them via Graph, mapped them,
    deleted them — surfacing + fixing two live‑only bugs (BOM in the reader's JSON; system columns
@@ -16,18 +16,22 @@ We then **built and LIVE‑VALIDATED the first two SharePoint bridge capabilitie
 2. **docs → agent knowledge** (reader + planner + CLI). A throwaway probe created a real document
    library, uploaded files (incl. a subfolder + a `.png`), read + downloaded them, and planned them
    into groundable/skipped knowledge with a `KNOWLEDGE.md` guide. Clean first‑try end‑to‑end.
+3. **portable demo knowledge** (planner + CLI + Graph writer). A throwaway probe authored synthetic
+   files, planned them (sanitizer‑gated), **created a demo library + uploaded**, **read it back** via
+   the capability‑2 reader (cross‑capability verification), and deleted it — surfacing + fixing a
+   live‑only bug (**non‑ASCII em‑dash in a `.ps1` breaks Windows PowerShell 5.1**, which reads
+   BOM‑less scripts as ANSI).
 
-- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **73 tests
+- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **78 tests
   green** (`npm run check`), working tree **clean and in sync with origin**.
 - **Demos (public, importable):** `walkthenose75/virtual-rounding`, `walkthenose75/inventory-tracker-go`.
 - **Tenant:** Skunkworks POC `https://orgfd452920.crm.dynamics.com/` (env `db02e4be‑e8d1‑e733‑bbac‑10384a8f4212`,
   tenant `505fd4e7‑74f6‑4aec‑9c0e‑3ed624c84faf`), active `pac` + `az` as `admin@diax56912972.onmicrosoft.com`.
 
-## ✅ DONE: SharePoint **lists → Dataverse** adapter (BUILT + LIVE‑VALIDATED)
+## ✅ DONE: the SharePoint **bridge** — all 3 capabilities BUILT + LIVE‑VALIDATED
 
-The "SharePoint bridge" (read‑only source ingestion, since SharePoint isn't a target workload). Three
-capabilities were scoped; **capabilities (1) lists→Dataverse and (2) docs→knowledge are complete and
-live‑validated; (3) is next**. Design is **LOCKED** — do not re‑litigate:
+The "SharePoint bridge" (read‑only source ingestion, since SharePoint isn't a target workload). All
+three scoped capabilities are **complete and live‑validated**. Design is **LOCKED** — do not re‑litigate:
 
 - **Source:** a **LIVE SharePoint site** (not PnP scripts for v1).
 - **Auth:** **Microsoft Graph device‑code sign‑in** (SE signs in; least setup, cross‑platform).
@@ -74,8 +78,21 @@ live‑validated; (3) is next**. Design is **LOCKED** — do not re‑litigate:
   pilot]). **8 planner tests.** Live probe (`workspaces/_kb-probe/run.ps1`, gitignored) created a real
   document library, uploaded files (incl. a subfolder + a `.png`), read + downloaded them, planned them
   (2 groundable / 1 skipped), ran `reimagine scan` on the downloads (clean), and deleted the library.
-- **⏭ NEXT SharePoint capability (3): create a demo SharePoint site + upload sanitized knowledge** for a
-  portable, self‑contained demo knowledge source (pairs with the docs→knowledge planner above).
+- **Capability (3) portable demo knowledge — BUILT + LIVE‑VALIDATED (this session):**
+  `src/demo-knowledge.ts` (pure planner — reuses the capability‑2 classifier; builds an upload plan +
+  `DEMO_KNOWLEDGE.md`) + `reimagine demo-knowledge` CLI (**refuses if `reimagine scan` finds anything**)
+  + `scripts/publish-demo-knowledge.ps1` (Graph device‑code, Sites.Manage.All — re‑runs the sanitizer
+  gate, creates/reuses the demo library, uploads files preserving folders, writes the library URL to
+  `demo-knowledge-result.json` for grounding via `add-knowledge`). **5 planner tests.** Live probe
+  (`workspaces/_dk-probe/run.ps1`, gitignored) authored synthetic files, planned + published them,
+  **read them back via the capability‑2 reader** (cross‑capability verification), and deleted the library.
+  - **Live‑only bug found + fixed:** a non‑ASCII **em‑dash in a `.ps1`** broke Windows PowerShell 5.1
+    (it reads BOM‑less scripts as ANSI, so UTF‑8 `—` → mojibake `â€"` → parser error). Rule now:
+    **keep `.ps1` files pure ASCII** in executable code. Verified with a `Parser::ParseFile` check.
+- **⏭ The SharePoint bridge is COMPLETE.** Next candidates (pick with the operator): (a) exercise the
+  full bridge inside a **real SharePoint‑backed pilot** end‑to‑end; (b) the **"additional context files
+  at intake"** roadmap idea (PPTX/Word/PDF → context or reimagine target); (c) whatever the operator
+  brings. See [ROADMAP.md](ROADMAP.md).
 
 ## This session's shipped work (all committed + pushed to the kit)
 

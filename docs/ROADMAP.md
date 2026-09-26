@@ -13,8 +13,8 @@ commitment. Durable "why/how" background for shipped work lives in
 ### SharePoint bridge — read‑only source ingestion
 
 SharePoint isn't a target workload, but real solutions are SharePoint‑backed, so the kit needs to
-**read** it. Three capabilities scoped; **#1 and #2 are built + live‑validated; #3 is next** (full
-design + type map in [SESSION_HANDOFF.md](SESSION_HANDOFF.md)):
+**read** it. Three capabilities scoped; **all three are built + live‑validated — the bridge is
+complete** (full design in [SESSION_HANDOFF.md](SESSION_HANDOFF.md)):
 
 1. **Lists → Dataverse tables — ✅ BUILT.** `scripts/read-sharepoint-list.ps1` (Graph device‑code)
    reads a live list's schema; `src/sharepoint-map.ts` + `reimagine sharepoint-map` map it to a
@@ -28,8 +28,13 @@ design + type map in [SESSION_HANDOFF.md](SESSION_HANDOFF.md)):
    against Copilot Studio's rules (supported types, 512 MB/file, 500 files/agent), skip images/media,
    and emit a `knowledge-plan.json` + a `KNOWLEDGE.md` guide (upload sanitized files, or native
    SharePoint via `add-knowledge`). **Sanitize‑first, no source content published.** 8 planner tests.
-3. **Create a demo SharePoint site + upload sanitized knowledge** *(next)* — for a portable,
-   self‑contained demo knowledge source.
+3. **Create a demo SharePoint site + upload sanitized knowledge — ✅ BUILT.**
+   `src/demo-knowledge.ts` + `reimagine demo-knowledge` validate a folder of publishable
+   (synthetic/sanitized) files against the same Copilot Studio rules and **refuse if `reimagine scan`
+   finds anything**, writing a plan + a `DEMO_KNOWLEDGE.md` guide; `scripts/publish-demo-knowledge.ps1`
+   (Graph device‑code, Sites.Manage.All) re‑runs the sanitizer gate, creates/reuses the demo library,
+   uploads the files (preserving folders), and writes the library URL for grounding via `add-knowledge`.
+   5 planner tests. Portable, carries **no customer content**.
 
 ---
 

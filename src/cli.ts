@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { startFromRepository, startFromZip } from "./intake.js";
 import type { IntakePayload } from "./intake-kickoff.js";
@@ -6,6 +6,7 @@ import { renderAgentBuild } from "./agent-build.js";
 import { scaffoldPlan } from "./plan-scaffold.js";
 import { mapSharePointToDataverse, type SpSchema } from "./sharepoint-map.js";
 import { planKnowledge, renderKnowledgeGuide, type DocSchema } from "./knowledge-plan.js";
+import { planDemoUpload, renderDemoKnowledgeGuide, DEFAULT_DEMO_LIBRARY, type LocalFile } from "./demo-knowledge.js";
 import { packagePublication, renderPackageReport } from "./package.js";
 import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
 import { scanPath } from "./sanitizer.js";
@@ -38,6 +39,23 @@ function optionalValueOf(args: string[], flag: string): string | undefined {
   return value && !value.startsWith("--") ? value : undefined;
 }
 
+/** List files under a folder recursively as {name, relPath, size} (forward-slash relative paths). */
+async function listFilesRecursive(root: string, dir: string = root): Promise<LocalFile[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const out: LocalFile[] = [];
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...(await listFilesRecursive(root, full)));
+    } else if (entry.isFile()) {
+      const rel = path.relative(root, dir).split(path.sep).join("/");
+      const info = await stat(full);
+      out.push({ name: entry.name, relPath: rel, size: info.size });
+    }
+  }
+  return out;
+}
+
 function printUsage(): void {
   console.log(`Usage:
   reimagine                                            # what's my status + next step?
@@ -50,6 +68,7 @@ function printUsage(): void {
   reimagine plan-scaffold [--workspace <directory>]    # seed a valid draft target model for plan mode (new-concept)
   reimagine sharepoint-map --schema <schema.json> --prefix <p> [--workspace <dir>] [--out <tables.json>]   # SharePoint list schema -> Dataverse tables.json + column map
   reimagine knowledge-plan --schema <docs.json> [--workspace <dir>] [--out <knowledge-plan.json>] [--recommend upload|sharepoint] [--pilot <name>]   # SharePoint docs -> agent-knowledge plan + KNOWLEDGE.md
+  reimagine demo-knowledge --source <dir> [--site <url>] [--library <name>] [--workspace <dir>] [--pilot <name>] [--out <plan.json>]   # plan a portable demo knowledge library + DEMO_KNOWLEDGE.md
   reimagine validate --workspace <directory>
   reimagine manual-guide [--workspace <directory>] [--out <file>]   # UI/manual steps the agent can't automate
   reimagine agent-guide [--workspace <directory>] [--out <file>] [--tables a,b] [--built] [--prefix inv] [--solution Name]    # Copilot Studio agent build + finish guide
@@ -211,6 +230,47 @@ async function main(): Promise<void> {
       for (const d of plan.decisions) console.log(`    - ${d.title}`);
     }
     console.log(`Next: SANITIZE then ground — recommended mode: ${plan.grounding.recommended}. See KNOWLEDGE.md.`);
+    return;
+  }
+
+  if (command === "demo-knowledge") {
+    const source = path.resolve(valueOf(args, "--source"));
+    let files: LocalFile[];
+    try {
+      files = await listFilesRecursive(source);
+    } catch {
+      throw new Error(`Source folder not found: ${source}. Point --source at a folder of publishable (synthetic/sanitized) knowledge files.`);
+    }
+    if (!files.length) throw new Error(`No files in ${source}.`);
+    // Safety gate: never plan a publish of un-sanitized content.
+    const findings = await scanPath(source);
+    if (findings.length > 0) {
+      for (const f of findings) console.error(`${f.file}:${f.line} [${f.rule}] ${f.excerpt}`);
+      console.error(`\nRefusing: ${findings.length} sensitive finding(s) in ${source}. Redact or replace, then retry.`);
+      process.exitCode = 2;
+      return;
+    }
+    const site = optionalValueOf(args, "--site");
+    const library = optionalValueOf(args, "--library") ?? DEFAULT_DEMO_LIBRARY;
+    const workspace = optionalValueOf(args, "--workspace")
+      ? path.resolve(valueOf(args, "--workspace"))
+      : await findNewestWorkspace();
+    const pilot = optionalValueOf(args, "--pilot") ?? (workspace ? path.basename(workspace) : undefined);
+    const plan = planDemoUpload(files, { library, ...(site ? { siteUrl: site } : {}) });
+    const outPlan = optionalValueOf(args, "--out")
+      ? path.resolve(valueOf(args, "--out"))
+      : workspace
+        ? path.join(workspace, "generated", "target-state", "demo-knowledge-plan.json")
+        : path.resolve("demo-knowledge-plan.json");
+    await mkdir(path.dirname(outPlan), { recursive: true });
+    await writeFile(outPlan, `${JSON.stringify(plan, null, 2)}\n`, "utf8");
+    const outGuide = workspace ? path.join(workspace, "DEMO_KNOWLEDGE.md") : path.resolve("DEMO_KNOWLEDGE.md");
+    await writeFile(outGuide, renderDemoKnowledgeGuide(plan, { pilotName: pilot, sourceDir: source }), "utf8");
+    console.log(`Demo knowledge: ${plan.upload.length} file(s) to upload, ${plan.excluded.length} excluded (scan clean).`);
+    console.log(`  plan:   ${outPlan}`);
+    console.log(`  guide:  ${outGuide}`);
+    const siteArg = site ? ` -SiteUrl ${site}` : "";
+    console.log(`Next: ./scripts/publish-demo-knowledge.ps1${siteArg} -LibraryName "${library}" -SourceDir "${source}"`);
     return;
   }
 

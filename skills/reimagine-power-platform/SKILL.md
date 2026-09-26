@@ -212,6 +212,22 @@ files (portable/publishable — the default) or **native SharePoint** (`add-know
 pilot only). **Sanitize first:** downloads stay gitignored, must pass `reimagine scan`, and only
 sanitized, non-identifying files are uploaded or published.
 
+**Portable demo knowledge (the bridge, part 3).** For a shareable demo, don't ground on the customer's
+live library — publish a **portable** knowledge source on the demo tenant from synthetic/sanitized files:
+
+```powershell
+npm run reimagine -- demo-knowledge --source <ws>/generated/knowledge --site https://<demo-tenant>.sharepoint.com/sites/<site> --library "Reimagined Demo Knowledge" --workspace <ws>
+./scripts/publish-demo-knowledge.ps1 -SiteUrl https://<demo-tenant>.sharepoint.com/sites/<site> -LibraryName "Reimagined Demo Knowledge" -SourceDir <ws>/generated/knowledge
+```
+
+`demo-knowledge` validates the folder against the same Copilot Studio rules, **refuses if `reimagine scan`
+finds anything**, and writes `demo-knowledge-plan.json` + a **`DEMO_KNOWLEDGE.md`** guide.
+`publish-demo-knowledge.ps1` (Graph device code, Sites.Manage.All) re-runs the sanitizer gate, creates the
+library if needed, uploads the files (preserving folders), and writes the library URL to
+`demo-knowledge-result.json`. Then ground the agent on that URL via the **add-knowledge** skill — the demo
+carries **no customer content**. (Author the `generated/knowledge` set as synthetic material, like the
+synthetic Dataverse data.)
+
 **Reimagine means better, not just a CRUD list.** Default the code app to strong UX patterns:
 **master–detail** (a list plus a detail panel that shows every field, including images/files),
 **actionable dashboards** (rows click through to detail and expose primary actions — e.g., a

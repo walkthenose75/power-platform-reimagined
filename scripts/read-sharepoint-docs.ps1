@@ -22,7 +22,7 @@ param(
 $ErrorActionPreference = "Stop"
 $token = $AccessToken
 if (-not $token) {
-  # Microsoft Graph Command Line Tools — a Microsoft first-party PUBLIC client that supports the
+  # Microsoft Graph Command Line Tools - a Microsoft first-party PUBLIC client that supports the
   # device-code flow and delegated Graph scopes (no app registration or secret needed).
   $clientId = "14d82eec-204b-4c2f-b7e8-296a70dab67e"
   $scope = "https://graph.microsoft.com/Sites.Read.All offline_access"
