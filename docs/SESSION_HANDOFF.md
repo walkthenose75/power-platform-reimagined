@@ -8,16 +8,16 @@ Read this first to resume with **zero drift**. It is the single source of truth 
 The **Power Platform Reimagined** kit is mature and battle‑tested. This session hardened it
 end‑to‑end, ran a **second full pilot** (Inventory Tracking v2) through all 9 gates to a published,
 **directly importable** GitHub asset, and **empirically proved** the code‑app→solution limitation.
-We then started designing a **SharePoint bridge**; the design for the first capability is locked
-(below) and is the **next thing to build**.
+We then **built the first SharePoint bridge capability** — the lists→Dataverse adapter (reader +
+mapper + CLI + tests); it needs a **live validation** against a real SharePoint site (below).
 
-- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **59 tests
+- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **64 tests
   green** (`npm run check`), working tree **clean and in sync with origin**.
 - **Demos (public, importable):** `walkthenose75/virtual-rounding`, `walkthenose75/inventory-tracker-go`.
 - **Tenant:** Skunkworks POC `https://orgfd452920.crm.dynamics.com/` (env `db02e4be‑e8d1‑e733‑bbac‑10384a8f4212`,
   tenant `505fd4e7‑74f6‑4aec‑9c0e‑3ed624c84faf`), active `pac` + `az` as `admin@diax56912972.onmicrosoft.com`.
 
-## ⏭ NEXT TASK (in flight): SharePoint **lists → Dataverse** discovery adapter
+## ⏭ NEXT: live‑validate the SharePoint **lists → Dataverse** adapter (BUILT)
 
 We're designing a "SharePoint bridge" (read‑only source ingestion, since SharePoint isn't a target
 workload). Three capabilities were scoped; **we chose to build lists→Dataverse first**. Design is
@@ -40,17 +40,19 @@ workload). Three capabilities were scoped; **we chose to build lists→Dataverse
   recreated (recompute in app)** · Attachments→file/notes.
 - **Locked defaults:** person→text/synthetic; multi‑value lookups→simplify; **no source rows** (read
   schema only, generate synthetic data).
-- **To build next session:**
-  1. `scripts/read-sharepoint-list.ps1` — Graph device‑code sign‑in → write list schema JSON
-     (`generated/current-state/sharepoint-<list>.json`).
-  2. `src/sharepoint-map.ts` — map schema → `tables.json` (provision spec) + a **source→target
-     column map** (for synthetic‑data + traceability) + `solution-model.json` table components +
-     a decision + evidence (`kind: api-result` / `owner-confirmation`). Handle lookup ordering,
-     person/lookup defaults, calculated‑skip.
-  3. Wire `reimagine sharepoint-map` CLI + **tests** + a documented mapping table in the SKILL/docs.
-- **Deferred siblings (already scoped, not chosen yet):** (2) SharePoint **docs → agent knowledge**
-  (download → sanitize → ground via the `add-knowledge` skill or upload); (3) **create a demo
-  SharePoint site + upload sanitized knowledge files** for a portable, self‑contained demo.
+- **BUILT this session (commit `7d21509`):** `scripts/read-sharepoint-list.ps1` (Graph device‑code →
+  normalized schema JSON), `src/sharepoint-map.ts` (pure deterministic mapper → `tables.json` +
+  source→target column map + decisions), `reimagine sharepoint-map` CLI, **5 mapper tests (64 total
+  green)**, and the SKILL type‑map docs. Verified end‑to‑end on a sample schema (lookup ordering,
+  choices, person‑flatten, calculated‑skip all correct).
+- **Remaining for lists→Dataverse: a LIVE validation** against a real SharePoint site — the SE runs
+  `./scripts/read-sharepoint-list.ps1 -SiteUrl https://<tenant>.sharepoint.com/sites/<site>`, completes
+  the **device‑code sign‑in** (Sites.Read.All), then `reimagine sharepoint-map --schema <out> --prefix
+  <p> --workspace <ws>` → `provision-tables.ps1` → synthetic‑data. (Needs a real site + interactive
+  sign‑in — do this next session with the operator.)
+- **Next SharePoint capabilities (scoped, not built):** (2) **docs → agent knowledge** (download →
+  sanitize → ground via the `add-knowledge` skill or upload); (3) **create a demo SharePoint site +
+  upload sanitized knowledge** for a portable, self‑contained demo.
 
 ## This session's shipped work (all committed + pushed to the kit)
 
@@ -107,7 +109,7 @@ workload). Three capabilities were scoped; **we chose to build lists→Dataverse
 ```powershell
 cd C:\VSCodeProjects\power-platform-reimagined
 git pull                      # ensure latest
-npm run check                 # 59 tests should be green
+npm run check                 # 64 tests should be green
 pac auth list ; az account show   # confirm Skunkworks POC / tenant 505fd4e7…
 # if tokens expired: pac auth create --environment https://orgfd452920.crm.dynamics.com/ ; az login --tenant 505fd4e7-74f6-4aec-9c0e-3ed624c84faf
 npm run status                # kit's "where am I / next" (per workspace)

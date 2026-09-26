@@ -16,15 +16,14 @@ SharePoint isn't a target workload, but real solutions are SharePoint‑backed, 
 **read** it. Three capabilities scoped; **#1 is designed and next to build** (full design + type map
 in [SESSION_HANDOFF.md](SESSION_HANDOFF.md)):
 
-1. **Lists → Dataverse tables** *(build first)* — Graph **device‑code** sign‑in reads a live list's
-   schema (`/sites/{}/lists/{}/columns`), a **type map** converts it (Title→primary, choice→choice,
-   lookup→lookup, person→text/synthetic, calculated→skip, …), and it emits a `tables.json` for
-   `provision-tables.ps1` + a source→target column map + `solution-model.json` components. Then the
-   existing synthetic‑data + build stages run. **No source rows** — schema only → synthetic data.
-   To build: `scripts/read-sharepoint-list.ps1` + `src/sharepoint-map.ts` + `reimagine sharepoint-map`
-   CLI + tests.
-2. **Docs → agent knowledge** — download library files → sanitize → ground the agent (native
-   SharePoint knowledge via the `add-knowledge` skill, or upload files).
+1. **Lists → Dataverse tables — ✅ BUILT.** `scripts/read-sharepoint-list.ps1` (Graph device‑code)
+   reads a live list's schema; `src/sharepoint-map.ts` + `reimagine sharepoint-map` map it to a
+   `tables.json` (for `provision-tables.ps1`) + a source→target column map + decisions
+   (Title→primary, choice→choice, lookup→lookup when in scope, person→text, calculated→skip, …),
+   **schema only → synthetic data**. 5 mapper tests. *Remaining: a live validation against a real
+   SharePoint site.*
+2. **Docs → agent knowledge** *(next)* — download library files → sanitize → ground the agent
+   (native SharePoint knowledge via the `add-knowledge` skill, or upload files).
 3. **Create a demo SharePoint site + upload sanitized knowledge** — for a portable, self‑contained
    demo knowledge source.
 
