@@ -69,5 +69,17 @@ Write-Host "`n== Importing into the environment (adds the agent to '$Solution') 
 pac solution import --path $zip.FullName --environment $EnvironmentUrl --publish-changes true
 if ($LASTEXITCODE -ne 0) { throw "pac solution import failed." }
 
+# 5. Remove the per-agent solution that `pac copilot init` auto-creates (unique name == the agent
+#    schema name), so the agent lives only in the target solution. Deleting an unmanaged solution does
+#    NOT delete the agent (it remains in the target + Default). Best-effort, and guarded so it can
+#    never touch the target solution.
+$agentSolution = "${PublisherPrefix}_" + ($Name -replace '[^a-zA-Z0-9]', '')
+if ($agentSolution -and $agentSolution -ne $Solution) {
+  Write-Host "`n== Removing the auto-created per-agent solution '$agentSolution' (avoids sprawl) ==" -ForegroundColor Cyan
+  pac solution delete --solution-name $agentSolution 2>$null
+  if ($LASTEXITCODE -eq 0) { Write-Host "[OK] removed redundant solution '$agentSolution'; agent remains in '$Solution'" -ForegroundColor Green }
+  else { Write-Host "[INFO] no separate '$agentSolution' solution to remove" -ForegroundColor DarkGray }
+}
+
 Write-Host "`n[DONE] Agent '$Name' built as code and imported into '$Solution'." -ForegroundColor Green
 Write-Host "Next (one-time, manual): add the Dataverse MCP tool + authorize the connection, then publish + choose a channel. See AGENT_BUILD.md." -ForegroundColor Cyan

@@ -288,6 +288,14 @@ The machine did have the **Power Platform CLI (`pac`)**, so we adapted to the **
   the `AddSolutionComponent` action (ComponentType=1 for tables, `DoNotIncludeSubcomponents=false`
   to bring columns/relationships), then delete the old container (unmanaged deletion keeps the
   components in the environment).
+- **`pac copilot init` auto-creates a per-agent solution** named after the agent **schema name**
+  (`<prefix>_<AgentNameWithoutSpaces>`, e.g. `bme_BMEServiceAssistant`). If you're intentionally
+  building the agent into a named solution (the deliverable), you end up with **two** unmanaged
+  solutions — the target (everything) and a redundant one holding only the agent (component type
+  **10225**). Deleting the redundant unmanaged container is **safe**: the agent record survives (it
+  stays in the target + Default), still published and editable. `scripts/build-agent.ps1` now removes
+  that per-agent solution automatically after import (guarded so it can never touch the target). Spot
+  it with `solutioncomponents?$filter=objectid eq <botid>` (lists every solution the agent is in).
 
 ## Build conventions — Fluent UI 2 + models
 
