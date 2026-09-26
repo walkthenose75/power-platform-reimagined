@@ -5,6 +5,7 @@ import type { IntakePayload } from "./intake-kickoff.js";
 import { renderAgentBuild } from "./agent-build.js";
 import { scaffoldPlan } from "./plan-scaffold.js";
 import { mapSharePointToDataverse, type SpSchema } from "./sharepoint-map.js";
+import { planKnowledge, renderKnowledgeGuide, type DocSchema } from "./knowledge-plan.js";
 import { packagePublication, renderPackageReport } from "./package.js";
 import { type RecordedManualStep, renderManualGuide } from "./manual-steps.js";
 import { scanPath } from "./sanitizer.js";
@@ -48,6 +49,7 @@ function printUsage(): void {
   reimagine init --name <name> --source <tenant|repository|new-concept> --output <directory>
   reimagine plan-scaffold [--workspace <directory>]    # seed a valid draft target model for plan mode (new-concept)
   reimagine sharepoint-map --schema <schema.json> --prefix <p> [--workspace <dir>] [--out <tables.json>]   # SharePoint list schema -> Dataverse tables.json + column map
+  reimagine knowledge-plan --schema <docs.json> [--workspace <dir>] [--out <knowledge-plan.json>] [--recommend upload|sharepoint] [--pilot <name>]   # SharePoint docs -> agent-knowledge plan + KNOWLEDGE.md
   reimagine validate --workspace <directory>
   reimagine manual-guide [--workspace <directory>] [--out <file>]   # UI/manual steps the agent can't automate
   reimagine agent-guide [--workspace <directory>] [--out <file>] [--tables a,b] [--built] [--prefix inv] [--solution Name]    # Copilot Studio agent build + finish guide
@@ -174,6 +176,41 @@ async function main(): Promise<void> {
       for (const d of result.decisions) console.log(`    - ${d.title}`);
     }
     console.log(`Next: provision the tables — scripts/provision-tables.ps1 -EnvironmentUrl <env> -Solution <sol> -SpecFile "${outTables}"`);
+    return;
+  }
+
+  if (command === "knowledge-plan") {
+    const schemaPath = path.resolve(valueOf(args, "--schema"));
+    const schema = (await readJsonFile(schemaPath)) as unknown as DocSchema | null;
+    if (!schema || !Array.isArray(schema.libraries)) {
+      throw new Error(`No SharePoint docs schema at ${schemaPath}. Produce it with scripts/read-sharepoint-docs.ps1.`);
+    }
+    const recommendRaw = optionalValueOf(args, "--recommend");
+    if (recommendRaw && recommendRaw !== "upload" && recommendRaw !== "sharepoint") {
+      throw new Error("--recommend must be 'upload' or 'sharepoint'.");
+    }
+    const workspace = optionalValueOf(args, "--workspace")
+      ? path.resolve(valueOf(args, "--workspace"))
+      : await findNewestWorkspace();
+    const pilot = optionalValueOf(args, "--pilot") ?? (workspace ? path.basename(workspace) : undefined);
+    const plan = planKnowledge(schema, recommendRaw ? { recommend: recommendRaw as "upload" | "sharepoint" } : {});
+    const outPlan = optionalValueOf(args, "--out")
+      ? path.resolve(valueOf(args, "--out"))
+      : workspace
+        ? path.join(workspace, "generated", "target-state", "knowledge-plan.json")
+        : path.resolve("knowledge-plan.json");
+    await mkdir(path.dirname(outPlan), { recursive: true });
+    await writeFile(outPlan, `${JSON.stringify(plan, null, 2)}\n`, "utf8");
+    const outGuide = workspace ? path.join(workspace, "KNOWLEDGE.md") : path.resolve("KNOWLEDGE.md");
+    await writeFile(outGuide, renderKnowledgeGuide(plan, { pilotName: pilot, siteUrl: schema.site }), "utf8");
+    console.log(`Planned knowledge from ${plan.libraries.length} library(ies) -> ${plan.summary.groundable} groundable file(s), ${plan.summary.skipped} skipped.`);
+    console.log(`  plan:   ${outPlan}`);
+    console.log(`  guide:  ${outGuide}`);
+    if (plan.decisions.length) {
+      console.log(`  decisions (${plan.decisions.length}):`);
+      for (const d of plan.decisions) console.log(`    - ${d.title}`);
+    }
+    console.log(`Next: SANITIZE then ground — recommended mode: ${plan.grounding.recommended}. See KNOWLEDGE.md.`);
     return;
   }
 

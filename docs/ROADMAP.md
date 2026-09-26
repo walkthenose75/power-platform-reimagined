@@ -13,8 +13,8 @@ commitment. Durable "why/how" background for shipped work lives in
 ### SharePoint bridge — read‑only source ingestion
 
 SharePoint isn't a target workload, but real solutions are SharePoint‑backed, so the kit needs to
-**read** it. Three capabilities scoped; **#1 is designed and next to build** (full design + type map
-in [SESSION_HANDOFF.md](SESSION_HANDOFF.md)):
+**read** it. Three capabilities scoped; **#1 and #2 are built + live‑validated; #3 is next** (full
+design + type map in [SESSION_HANDOFF.md](SESSION_HANDOFF.md)):
 
 1. **Lists → Dataverse tables — ✅ BUILT.** `scripts/read-sharepoint-list.ps1` (Graph device‑code)
    reads a live list's schema; `src/sharepoint-map.ts` + `reimagine sharepoint-map` map it to a
@@ -22,10 +22,14 @@ in [SESSION_HANDOFF.md](SESSION_HANDOFF.md)):
    (Title→primary, choice→choice, lookup→lookup when in scope, person→text, calculated→skip, …),
    **schema only → synthetic data**. 5 mapper tests. *Remaining: a live validation against a real
    SharePoint site.*
-2. **Docs → agent knowledge** *(next)* — download library files → sanitize → ground the agent
-   (native SharePoint knowledge via the `add-knowledge` skill, or upload files).
-3. **Create a demo SharePoint site + upload sanitized knowledge** — for a portable, self‑contained
-   demo knowledge source.
+2. **Docs → agent knowledge — ✅ BUILT.** `scripts/read-sharepoint-docs.ps1` (Graph device‑code)
+   enumerates a site's document libraries + files (recursing folders) and can download them into the
+   gitignored workspace; `src/knowledge-plan.ts` + `reimagine knowledge-plan` classify each file
+   against Copilot Studio's rules (supported types, 512 MB/file, 500 files/agent), skip images/media,
+   and emit a `knowledge-plan.json` + a `KNOWLEDGE.md` guide (upload sanitized files, or native
+   SharePoint via `add-knowledge`). **Sanitize‑first, no source content published.** 8 planner tests.
+3. **Create a demo SharePoint site + upload sanitized knowledge** *(next)* — for a portable,
+   self‑contained demo knowledge source.
 
 ---
 

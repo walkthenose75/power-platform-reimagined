@@ -1,6 +1,6 @@
 # Session Handoff — resume point
 
-_Last updated: 2026‑09‑25 (session: kit hardening + Inventory v2 pilot + SharePoint bridge design + **live‑validated lists→Dataverse adapter**)._
+_Last updated: 2026‑09‑25 (session: kit hardening + Inventory v2 pilot + SharePoint bridge — **live‑validated lists→Dataverse AND docs→knowledge adapters**)._
 Read this first to resume with **zero drift**. It is the single source of truth for where we are.
 
 ## TL;DR
@@ -8,13 +8,16 @@ Read this first to resume with **zero drift**. It is the single source of truth 
 The **Power Platform Reimagined** kit is mature and battle‑tested. This session hardened it
 end‑to‑end, ran a **second full pilot** (Inventory Tracking v2) through all 9 gates to a published,
 **directly importable** GitHub asset, and **empirically proved** the code‑app→solution limitation.
-We then **built and LIVE‑VALIDATED the first SharePoint bridge capability** — the lists→Dataverse
-adapter (reader + mapper + CLI + tests). A throwaway probe created real SharePoint lists (text/choice/
-currency/boolean/date + a resolved lookup, person, calculated), read them via Graph, mapped them, and
-deleted them — surfacing + fixing two live‑only bugs (BOM in the reader's JSON; system columns
-`ContentType`/`Attachments`). Clean first‑try end‑to‑end confirmed.
+We then **built and LIVE‑VALIDATED the first two SharePoint bridge capabilities**:
+1. **lists → Dataverse** (reader + mapper + CLI). A throwaway probe created real lists (text/choice/
+   currency/boolean/date + a resolved lookup, person, calculated), read them via Graph, mapped them,
+   deleted them — surfacing + fixing two live‑only bugs (BOM in the reader's JSON; system columns
+   `ContentType`/`Attachments`).
+2. **docs → agent knowledge** (reader + planner + CLI). A throwaway probe created a real document
+   library, uploaded files (incl. a subfolder + a `.png`), read + downloaded them, and planned them
+   into groundable/skipped knowledge with a `KNOWLEDGE.md` guide. Clean first‑try end‑to‑end.
 
-- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **65 tests
+- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **73 tests
   green** (`npm run check`), working tree **clean and in sync with origin**.
 - **Demos (public, importable):** `walkthenose75/virtual-rounding`, `walkthenose75/inventory-tracker-go`.
 - **Tenant:** Skunkworks POC `https://orgfd452920.crm.dynamics.com/` (env `db02e4be‑e8d1‑e733‑bbac‑10384a8f4212`,
@@ -23,8 +26,8 @@ deleted them — surfacing + fixing two live‑only bugs (BOM in the reader's JS
 ## ✅ DONE: SharePoint **lists → Dataverse** adapter (BUILT + LIVE‑VALIDATED)
 
 The "SharePoint bridge" (read‑only source ingestion, since SharePoint isn't a target workload). Three
-capabilities were scoped; **capability (1) lists→Dataverse is complete and live‑validated**. Design is
-**LOCKED** — do not re‑litigate:
+capabilities were scoped; **capabilities (1) lists→Dataverse and (2) docs→knowledge are complete and
+live‑validated; (3) is next**. Design is **LOCKED** — do not re‑litigate:
 
 - **Source:** a **LIVE SharePoint site** (not PnP scripts for v1).
 - **Auth:** **Microsoft Graph device‑code sign‑in** (SE signs in; least setup, cross‑platform).
@@ -61,9 +64,18 @@ capabilities were scoped; **capability (1) lists→Dataverse is complete and liv
   - To re‑validate: run the probe pattern in `workspaces/_sp-probe/run.ps1` (gitignored throwaway; the
     device‑code client needs `Sites.Manage.All` to create+delete; read‑only use needs only
     `Sites.Read.All`).
-- **⏭ NEXT SharePoint capability (2): docs → agent knowledge** (download → sanitize → ground via the
-  `add-knowledge` skill or upload); then (3) **create a demo SharePoint site + upload sanitized
-  knowledge** for a portable, self‑contained demo.
+- **Capability (2) docs → agent knowledge — BUILT + LIVE‑VALIDATED (this session):**
+  `scripts/read-sharepoint-docs.ps1` (Graph device‑code → enumerate document libraries + files,
+  recurse folders, optional `-DownloadDir` into the gitignored workspace, BOM‑free write),
+  `src/knowledge-plan.ts` (pure planner → classify each file against Copilot Studio's supported types +
+  **512 MB**/file + **500** files/agent, skip images/media, sanitize‑first) + `reimagine knowledge-plan`
+  CLI (writes `knowledge-plan.json` + a **`KNOWLEDGE.md`** guide with two grounding modes: **upload**
+  sanitized files [portable, default] or **native SharePoint** via the `add-knowledge` skill [in‑tenant
+  pilot]). **8 planner tests.** Live probe (`workspaces/_kb-probe/run.ps1`, gitignored) created a real
+  document library, uploaded files (incl. a subfolder + a `.png`), read + downloaded them, planned them
+  (2 groundable / 1 skipped), ran `reimagine scan` on the downloads (clean), and deleted the library.
+- **⏭ NEXT SharePoint capability (3): create a demo SharePoint site + upload sanitized knowledge** for a
+  portable, self‑contained demo knowledge source (pairs with the docs→knowledge planner above).
 
 ## This session's shipped work (all committed + pushed to the kit)
 

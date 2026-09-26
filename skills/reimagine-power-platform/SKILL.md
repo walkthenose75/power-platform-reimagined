@@ -194,6 +194,24 @@ text); calculated/rollup→**skipped** (recompute in the app); hyperlink→strin
 attachments→file. **Review the decisions** (simplifications) before building; then provision the tables
 and generate synthetic data.
 
+**SharePoint docs → agent knowledge (the bridge, part 2).** When the source keeps reference material in
+SharePoint **document libraries** (policies, SOPs, guides), ground the reimagined agent on them — read
+the library file metadata and plan how each file becomes Copilot Studio knowledge (read-only):
+
+```powershell
+./scripts/read-sharepoint-docs.ps1 -SiteUrl https://<tenant>.sharepoint.com/sites/<site> [-Library "<library>"] [-DownloadDir <ws>/evidence/knowledge/raw] -OutFile <ws>/generated/current-state/sharepoint-docs.json
+npm run reimagine -- knowledge-plan --schema <ws>/generated/current-state/sharepoint-docs.json --workspace <ws>
+```
+
+The reader (Graph device code, Sites.Read.All) enumerates libraries + files (recursing folders) and can
+**download** them into the **gitignored** workspace. `knowledge-plan` classifies each file against
+Copilot Studio's rules — supported types (Word/Excel/PowerPoint, PDF, txt/md/log, html, csv, xml, ODF,
+epub, rtf, iWork, json, yaml, tex; **512 MB**/file, **500** files/agent), skipping images/media — and
+writes `knowledge-plan.json` + a **`KNOWLEDGE.md`** guide with two grounding modes: **upload** sanitized
+files (portable/publishable — the default) or **native SharePoint** (`add-knowledge` skill, in-tenant
+pilot only). **Sanitize first:** downloads stay gitignored, must pass `reimagine scan`, and only
+sanitized, non-identifying files are uploaded or published.
+
 **Reimagine means better, not just a CRUD list.** Default the code app to strong UX patterns:
 **master–detail** (a list plus a detail panel that shows every field, including images/files),
 **actionable dashboards** (rows click through to detail and expose primary actions — e.g., a
