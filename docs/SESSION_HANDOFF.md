@@ -1,7 +1,24 @@
 # Session Handoff — resume point
 
-_Last updated: 2026‑09‑27 (session: SharePoint bridge COMPLETE + **BME pilot: full SharePoint‑backed run end‑to‑end to a LIVE data‑grounded agent** + 4 kit fixes)._
+_Last updated: 2026‑09‑28 (session: **DigiTier — a real customer solution ZIP reimagined end‑to‑end to a live Dataverse + Fluent 2 app + agent** + 4 more kit fixes)._
 Read this first to resume with **zero drift**. It is the single source of truth for where we are.
+
+## ▶️ LATEST — DigiTier pilot COMPLETE (2nd solution‑ZIP run, a real customer solution)
+Ran a real customer solution ZIP (`DigiTier_V1` — a Lean/tiered daily‑management system, publisher
+`merckdigitier`; treated source as read‑only evidence, kept all assets synthetic/non‑identifying)
+through the full 9‑gate workflow to a complete deliverable on Skunkworks POC:
+- Solution **`TieredDailyManagement`** (prefix `tdm`) = **7 Dataverse tables + Fluent 2 code app +
+  Tier Assistant agent** (audit clean; one solution). Scoped MVP of a 20‑table source.
+- **7 tables** (self‑referential tier hierarchy, SQDCP choices, dual‑Tier issue escalation) + **59
+  synthetic rows** (Riverside Plant), all verified live.
+- **Fluent 2 tiered board** deployed (appId `bb5a4d3a‑c591‑4858‑84e8‑72ebd428d84d`): SQDCP RAG tiles,
+  tier drill‑down, issues table + detail drawer with **Resolve/Escalate** actions, tasks + daily audit.
+- **Tier Assistant agent** built as code + published (`tdm_TierAssistant`), logical‑name grounded.
+- **4 more kit fixes** this real‑customer run forced out (all pushed): `bcd1c27` (start scaffolds
+  intake.json), `307d41a` (provision‑tables metadata‑cache retry + token refresh before publish),
+  `3663d8e` (loader lowercases logical names), and the app/agent flow re‑exercised the prior fixes.
+- Optional finish (not done): interactive agent grounding test (proven on BME); package/publish to
+  GitHub. Full detail in the session's `files/digitier-pilot-checkpoint.md`.
 
 ## ▶️ NEXT SESSION — run a FRESH solution end‑to‑end (operator's plan)
 Tomorrow: reimagine **another solution** end‑to‑end — a real **solution ZIP** through all 9 gates (the
