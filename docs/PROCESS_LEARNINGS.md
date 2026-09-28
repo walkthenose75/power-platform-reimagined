@@ -110,12 +110,25 @@ agent was built as code and imported **into the solution and the environment**:
   with the API, not the portal tree: the agent is a `solutioncomponents` row with **componenttype
   10225** whose `objectid` equals the `botid`. In the new maker portal it shows under **Agents** /
   the solution's **Agent** objects — not under Apps/Tables.
-- **Dataverse MCP is on by default for the Copilot Studio client** (per Learn
-  `data-platform-mcp-disable`). So adding the Dataverse MCP tool is genuinely ~2 clicks + one OAuth
-  consent — **no admin feature toggle** for the in-agent tool. Only *external* MCP clients (VS Code
-  GitHub Copilot, Claude) need PPAC → Settings → Product → Features enablement. `agent-build.ts`
-  now states this and uses the authoritative labels (**+ Add tool → Model Context Protocol →
-  Dataverse MCP Server → Add to agent**) plus grounded **test prompts**.
+- **Grounding the agent on Dataverse via MCP — the real gotchas (BME pilot, verified live).** Adding
+  the Dataverse MCP tool is ~2 clicks, but getting it to actually answer took four fixes:
+  1. **Connection must target the current environment.** The tool silently reused a stale connection
+     from a prior pilot ("Inventory Tracker DV") → **HTTP 403 "Couldn't load MCP tools."** Pick/create
+     a connection for *this* environment.
+  2. **The feature toggle must match the connector.** PPAC → env → **Settings → Product → Features →
+     Dataverse Model Context Protocol** has **separate GA and Preview switches.** The **(Preview)**
+     connector needs the **Preview** switch on; the **GA** connector needs the **GA** switch on. A
+     mismatch = 403. (It is *not* simply "on by default, nothing to turn on" — that only holds when the
+     right switch is already on. We shipped the demo on the **GA** connector + GA switch.)
+  3. **Instructions must use Dataverse LOGICAL names.** With only display names, the agent said it had
+     no data and asked for a CSV. The MCP `read_query` / `describe` tools query **logical names** — list
+     the tables, columns, choices, and lookups by logical name (e.g. `bme_bmeworkorders`,
+     `bme_priority`, lookup `bme_Asset`).
+  4. **Don't ground a demo on a freshly-created SharePoint *site*.** It isn't indexed yet (Microsoft
+     Search lag), so it **errors** *and* **hijacks data questions** away from the MCP tool (the agent
+     runs SharePoint search for "how many work orders" and fails). **Upload the knowledge files
+     directly** for demos; reserve SharePoint-site knowledge for already-indexed sites.
+  `agent-build.ts` now encodes all four in AGENT_BUILD.md (§2 connection+toggle, §8 troubleshooting).
 - **Make the code app embed-ready, not a placeholder.** The app's Assistant tab now renders an
   `<iframe>` from **`VITE_AGENT_EMBED_URL`** when set (Copilot Studio → Channels → Custom website),
   and falls back to the setup steps otherwise — so the agent lights up with a build var, no code

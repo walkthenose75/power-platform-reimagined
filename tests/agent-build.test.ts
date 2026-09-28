@@ -57,3 +57,15 @@ test("agent guide falls back to generic knowledge guidance without a URL", () =>
   assert.match(doc, /## 3\. Add knowledge/);
   assert.match(doc, /Upload\*\* sanitized files/);
 });
+
+test("agent guide includes MCP grounding troubleshooting (connection, GA/Preview toggle, logical names, SharePoint)", () => {
+  const doc = renderAgentBuild(base, { built: true, groundingTables: ["inv_inventoryitem"] });
+  assert.match(doc, /## 8\. Troubleshooting/);
+  assert.match(doc, /Couldn't load MCP tools/);
+  assert.match(doc, /GA vs \*\*Preview\*\*|GA.*Preview/);
+  assert.match(doc, /logical names/);
+  assert.match(doc, /inv_inventoryitem/);
+  assert.match(doc, /freshly-created SharePoint site/);
+  // connection-for-this-environment guidance appears in the MCP tool section
+  assert.match(doc, /connection for \*\*this\*\* environment/);
+});

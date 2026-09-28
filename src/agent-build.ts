@@ -91,9 +91,13 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   lines.push(`6. *(Optional)* **… → Edit** next to the tool to scope which tables/tools are exposed (${tablesLine}).`);
   lines.push("");
   lines.push(
-    "> The Dataverse MCP server is **enabled by default for the Copilot Studio client**, so there's " +
-      "usually nothing to turn on. Only *external* MCP clients (VS Code GitHub Copilot, Claude) need admin " +
-      "enablement in PPAC → Environment → **Settings → Product → Features → Dataverse Model Context Protocol**."
+    "> **The connection + the feature toggle both matter.** Pick a connection for **this** environment " +
+      "(not a leftover connection from another pilot). The Dataverse MCP server is enabled by default for " +
+      "the Copilot Studio client, but if the tool shows **\"Couldn't load MCP tools\" (HTTP 403)**, go to " +
+      "PPAC → your environment → **Settings → Product → Features → Dataverse Model Context Protocol** and " +
+      "turn on the switch that **matches your connector** — **GA** for the standard connector, **Preview** " +
+      "for the **(Preview)** one (they're separate switches). Then remove + re-add the tool. Only *external* " +
+      "MCP clients (VS Code GitHub Copilot, Claude) need the extra allow-listing."
   );
   lines.push("");
 
@@ -159,6 +163,28 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   lines.push("1. In Copilot Studio → **Channels** → **Custom website** (or **Web/Direct Line**), copy the agent's **embed URL**.");
   lines.push("2. Set it as the app's **`VITE_AGENT_EMBED_URL`** build variable (e.g. in the code app's `.env`), then redeploy.");
   lines.push("3. The **Assistant** tab now hosts the live agent; until then it shows these setup steps.");
+  lines.push("");
+
+  lines.push("## 8. Troubleshooting — if the agent can't answer data questions");
+  lines.push("");
+  lines.push("Hard-won gotchas from grounding a fresh agent (they'll save you an hour):");
+  lines.push("");
+  lines.push(
+    "- **\"Couldn't load MCP tools\" (403):** the MCP **feature toggle must match the connector** (GA vs " +
+      "**Preview** are separate switches in PPAC → env → Settings → Product → Features → Dataverse Model " +
+      "Context Protocol), and the tool's **connection must target this environment** — not a leftover from another pilot."
+  );
+  lines.push(
+    "- **Agent says it has no data / asks you to paste a CSV:** your instructions probably use **display " +
+      "names**. The MCP `read_query` / `describe` tools query **logical names** — list the tables, columns, " +
+      "choices, and lookups by logical name in the instructions (e.g. `" + (tables[0] ?? "prefix_table") + "`)."
+  );
+  lines.push(
+    "- **Data questions come back as SharePoint search errors:** a **freshly-created SharePoint site** used " +
+      "as knowledge isn't indexed yet (Microsoft Search lag) — it errors *and* hijacks data questions away " +
+      "from the MCP tool. For a demo, **upload the knowledge files directly** instead; reserve SharePoint-site " +
+      "knowledge for sites that are already indexed."
+  );
   lines.push("");
   return lines.join("\n");
 }
