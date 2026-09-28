@@ -109,6 +109,7 @@ foreach ($ent in ($manifest.entities | Sort-Object loadOrder)) {
         continue
       }
       $logicalCol = if ($colMap.ContainsKey($header)) { $colMap[$header] } else { $header }
+      $logicalCol = "$logicalCol".ToLower()  # Dataverse logical names are lowercase; the Web API is case-sensitive on property names + metadata LogicalName filters
       if (-not $m.Types.ContainsKey($logicalCol)) { continue }  # skip columns not on the table
       if ("$($m.Types[$logicalCol])" -eq "Picklist") {
         $pv = PicklistValue $logical $logicalCol $value
