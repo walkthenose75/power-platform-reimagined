@@ -82,6 +82,10 @@ Reviewing the built Inventory app surfaced three quality rules (now in the SKILL
 - **Ship better UX, not flat CRUD.** The first app was list + edit/delete with a passive dashboard.
   Default to **master–detail** (detail panel with the image + all fields) and **actionable
   dashboards** (click-through + a primary action like **Reorder**). Never lose a source screen.
+- **Give users a way to CREATE, not just read.** The DigiTier tiered board shipped read + resolve/
+  escalate but no way to add a new issue (the user caught it at review). Reimagined apps must offer a
+  create form (Drawer/Dialog) for the primary transactional entity — see the create-payload rules in
+  the CODE_APP_BUILD_RUNBOOK.
 
 ### Copilot Studio agents ARE code-authorable (build them, don't punt)
 
@@ -286,6 +290,20 @@ The machine did have the **Power Platform CLI (`pac`)**, so we adapted to the **
 - Use `pac code push --solutionName <name>` to place the code app in an **unmanaged solution**,
   then `pac solution export`/unpack to produce the GitHub-ready artifact. This connects the
   build step directly to the publication stage.
+- **The bundle must ship what its README points at.** `reimagine package` copies the exported
+  `<workspace>/solution/*.zip` **and** the code-app **source** (templatized `power.config.json` —
+  `appId` nulled, `environmentId` → `{{ENVIRONMENT_ID}}`; `node_modules`/`dist`/`.power` excluded)
+  into the bundle. So **`pac solution export` into `<workspace>/solution/` first** and stage the app
+  there — otherwise the solution README references a `*.zip` the bundle never shipped. (`1e6d65b`)
+- **Branding guard — never publish the source solution's name.** `pilotName`/`assessment.name`
+  drives every generated doc title, and it is often the **customer's product name** (the source ZIP
+  was `DigiTier_…`). Set a **generic** display name (`solution-model assessment.name` or intake
+  `publish.solutionHub.title`) before packaging; `package` now **warns when the bundle name matches
+  the source solution name**, and `renderAgentBuild` prefers the hub title so a customer name can't
+  surface in `AGENT_BUILD.md`. DigiTier shipped as **"Tiered Daily Management"**. (`1e6d65b`)
+- **Verify clean three ways before a public push:** the built-in sanitizer, a token grep of the text
+  files, **and** a scan of the files **inside** the solution zip (its `customizations.xml`/`bot.xml`
+  and the compiled app JS) — the zip is a publishable asset too.
 
 ## Solution naming & scope — build everything in the target solution
 
@@ -327,6 +345,14 @@ The machine did have the **Power Platform CLI (`pac`)**, so we adapted to the **
   (`DataGrid`, `Field`, `Dialog`). Avoid v8 (`@fluentui/react`) and Northstar. The Virtual
   Rounding pilot predates this (hand-rolled CSS); default new work to Fluent 2. Intake captures
   `target.uiSystem` (`fluent2` | `custom`).
+- **Light/dark theming — strip the Vite template CSS and add a real toggle.** The scaffold's
+  `index.css` hardcodes a dark `#242424` page background + dark button backgrounds that **override**
+  the Fluent theme, so "light" never actually shows (only dark). Delete those template rules (let
+  Fluent own color), drive the theme from state (persist the choice in `localStorage`, default to
+  `prefers-color-scheme`), and have `FluentProvider` **paint the themed canvas**
+  (`style={{ background: tokens.colorNeutralBackground2 }}`). Add a header toggle
+  (`WeatherSunnyRegular`/`WeatherMoonRegular`). (DigiTier — the app appeared "dark only" until the
+  template CSS was removed.)
 - **Models:** drive the build phases with the strongest agentic **coding** model available
   (Claude Sonnet-class); use a high-**reasoning** model (GPT-5 / o-series) for the architecture
   and plan-mode gates. Pick the strongest models the selected harness offers; the GitHub Copilot
@@ -406,6 +432,23 @@ Implication for the deliverable model:
 > ComponentId=appId) in `scripts/add-app-to-solution.ps1`, and `scripts/audit-solution.ps1`
 > verifies membership + flags any component built but not added.
 
+## Synthetic-data loader — CSV → Dataverse (case + choice + lookup resolution)
+
+`scripts/load-synthetic-data.ps1` loads the generated CSVs via the Web API. Two live-only bugs made
+it kit-hardening material:
+
+- **Lowercase CSV headers to canonical logical names.** The Dataverse Web API is **case-sensitive**
+  on property names, so a PascalCase header (`tdm_IssueNumber`) → `400 "property does not exist"` (or
+  "choice not found"). The loader now lowercases every header to the logical name before POST.
+  (`3663d8e`)
+- **Resolve choice labels → numeric option values.** CSVs carry human labels (`Critical`), but the
+  Web API wants the **numeric option value** (`200000003`). The loader reads
+  `PicklistAttributeMetadata` and maps label→value per choice column (and fails clearly if a label
+  isn't a real option). (`633c469`)
+- **Resolve lookups by natural key** — look up the parent row's id by name/key and write
+  `"<Nav>@odata.bind": "/<entityset>(<id>)"`. Load in **dependency order** (referenced tables first)
+  so lookups resolve.
+
 ## Transient errors to retry (not real failures)
 
 The pilot hit several transient errors where the correct response is **retry**, not redesign:
@@ -416,6 +459,14 @@ The pilot hit several transient errors where the correct response is **retry**, 
 - **Table column create → `0x80040216 An unexpected error occurred`**: table metadata not ready
   immediately after creation. Retry with a short delay (the provisioning script does this) and
   add a settle pause after `New-Table`.
+- **Lookup column create → `0x80041102` (MetadataCacheEntry not found)** on a freshly-created target
+  table: the metadata cache hasn't propagated yet. The provisioning retry now covers this (not just
+  `0x80040216`) — retry/settle rather than redesign. (`307d41a`)
+- **Data write to a fresh table → `0x80048d19` / "property does not exist"**: the **data** endpoint
+  lags behind metadata on a new table. Same fix — retry with a short settle.
+- **Refresh the `az` access token before the final `PublishAllXml`.** On a big schema the ~1h token
+  can expire mid-provision → `401` right at publish. Re-acquire the token immediately before the
+  publish call. (`307d41a`)
 - **First `pac code push` after enabling code apps → `403 CodeAppOperationNotAllowedInEnvironment`**:
   enablement propagation delay (minutes), not a permanent block. Retry until it clears.
 

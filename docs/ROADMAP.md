@@ -20,8 +20,8 @@ complete** (full design in [SESSION_HANDOFF.md](SESSION_HANDOFF.md)):
    reads a live list's schema; `src/sharepoint-map.ts` + `reimagine sharepoint-map` map it to a
    `tables.json` (for `provision-tables.ps1`) + a source→target column map + decisions
    (Title→primary, choice→choice, lookup→lookup when in scope, person→text, calculated→skip, …),
-   **schema only → synthetic data**. 5 mapper tests. *Remaining: a live validation against a real
-   SharePoint site.*
+   **schema only → synthetic data**. 5 mapper tests.    ~~*Remaining: a live validation against a real
+      SharePoint site.*~~ **Done** — the BME pilot ran a real SharePoint-backed source through this to Dataverse.
 2. **Docs → agent knowledge — ✅ BUILT.** `scripts/read-sharepoint-docs.ps1` (Graph device‑code)
    enumerates a site's document libraries + files (recursing folders) and can download them into the
    gitignored workspace; `src/knowledge-plan.ts` + `reimagine knowledge-plan` classify each file

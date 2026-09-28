@@ -112,6 +112,11 @@ A reimagined app should **improve** on the source, and never lose a source scree
     required, so build a `Partial<…Base>` and cast (`as unknown as Omit<…Base, '<id>'>`).
   - Plain‑string "number" columns (e.g. `tdm_issuenumber`) are **not** autonumber unless you made
     them so; compute the next value client‑side from the loaded rows.
+- **Light/dark theming.** Give users a working theme toggle. The Vite template `index.css` hardcodes
+  a dark page + button background that **overrides** Fluent (so "light" never shows) — delete those
+  rules, drive the theme from state (persist in `localStorage`, default to `prefers-color-scheme`),
+  have `FluentProvider` paint the canvas (`background: tokens.colorNeutralBackground2`), and add a
+  header sun/moon toggle (`WeatherSunnyRegular`/`WeatherMoonRegular`).
 - **Fidelity check.** Before calling the app done, confirm every **source screen** and every
   **source column** has a target counterpart (or an explicit, recorded decision to drop it).
 
