@@ -49,7 +49,7 @@ function Label($t) { @{ "@odata.type"="Microsoft.Dynamics.CRM.Label"; LocalizedL
 function EntityExists($logical) { try { Invoke-RestMethod -Uri "$base/EntityDefinitions(LogicalName='$logical')?`$select=LogicalName" -Headers $h | Out-Null; return $true } catch { return $false } }
 function AttrExists($entity, $logical) { try { Invoke-RestMethod -Uri "$base/EntityDefinitions(LogicalName='$entity')/Attributes(LogicalName='$logical')?`$select=LogicalName" -Headers $h | Out-Null; return $true } catch { return $false } }
 function PostJson($url, $obj) { Invoke-RestMethod -Uri $url -Method Post -Headers $h -Body ($obj | ConvertTo-Json -Depth 20) -ContentType "application/json" }
-function Retry($script) { for ($i=0; $i -lt 6; $i++) { try { & $script; return } catch { if ("$($_)" -match '0x80040216|SQL|deadlock' -and $i -lt 5) { Start-Sleep 6 } else { throw } } } }
+function Retry($script) { for ($i=0; $i -lt 8; $i++) { try { & $script; return } catch { if ("$($_)" -match '0x80040216|0x80041102|MetadataCache|not found in the Metadata|SQL|deadlock|timed out' -and $i -lt 7) { Start-Sleep 6 } else { throw } } } }
 
 function ColumnMeta($c) {
   $sn = $c.schemaName; $dn = if ($c.displayName) { $c.displayName } else { $sn }
@@ -114,5 +114,9 @@ foreach ($t in $spec.tables) {
 }
 
 Write-Host "`nPublishing customizations..." -ForegroundColor Cyan
+# A large provision (many tables + metadata-cache retries) can outlive the initial ~1h az token,
+# which 401s the final publish. Refresh the token right before publishing.
+$token = az account get-access-token --resource $EnvironmentUrl --query accessToken -o tsv
+if ($token) { $h["Authorization"] = "Bearer $token" }
 Invoke-RestMethod -Uri "$base/PublishAllXml" -Method Post -Headers $h -Body '{}' -ContentType "application/json" | Out-Null
 Write-Host "[DONE] tables provisioned in $Solution" -ForegroundColor Green
