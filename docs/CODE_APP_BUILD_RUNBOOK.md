@@ -102,6 +102,16 @@ A reimagined app should **improve** on the source, and never lose a source scree
   reorder flow), not a read‑only table.
 - **Row activation.** Make list rows open detail (`onClick` / DataGrid `onRow*`), and put the top
   task as a primary `Button`.
+- **Create / write‑back.** The app must let users **create** new records for the primary
+  transactional entity (issues, work orders, requests…), not just read and change status. Add a
+  **New** primary `Button` that opens a form (`Drawer`/`Dialog`) and calls the generated service's
+  `create`. Create‑payload specifics (validated live):
+  - Choice fields take the **numeric option value** (`tdm_priority: 200000003`), not the label.
+  - Lookups are set with the bind syntax: `"tdm_Tier@odata.bind": \`/tdm_tiers(${id})\``.
+  - The platform sets `ownerid`/`statecode`, so omit them — the generated `create` type marks them
+    required, so build a `Partial<…Base>` and cast (`as unknown as Omit<…Base, '<id>'>`).
+  - Plain‑string "number" columns (e.g. `tdm_issuenumber`) are **not** autonumber unless you made
+    them so; compute the next value client‑side from the loaded rows.
 - **Fidelity check.** Before calling the app done, confirm every **source screen** and every
   **source column** has a target counterpart (or an explicit, recorded decision to drop it).
 
