@@ -9,13 +9,16 @@
 
   Usage:
     ./scripts/ensure-solution.ps1 -EnvironmentUrl https://<org>.crm.dynamics.com `
-        -PublisherUnique smartterhealth -PublisherFriendly "Smartter Health" -Prefix sh `
-        -SolutionUnique VirtualRounding -SolutionFriendly "Virtual Rounding"
+        -Prefix sh -SolutionUnique VirtualRounding -SolutionFriendly "Virtual Rounding"
+
+  -PublisherUnique defaults to the Prefix (so a `pac copilot`/`pac code` publisher named after the
+  prefix reuses the same publisher instead of orphaning ours). -PublisherFriendly defaults to
+  -SolutionFriendly. Pass them explicitly only to override.
 #>
 param(
   [Parameter(Mandatory = $true)][string]$EnvironmentUrl,
-  [Parameter(Mandatory = $true)][string]$PublisherUnique,
-  [Parameter(Mandatory = $true)][string]$PublisherFriendly,
+  [string]$PublisherUnique,
+  [string]$PublisherFriendly,
   [Parameter(Mandatory = $true)][string]$Prefix,
   [int]$OptionValuePrefix = 20000,
   [Parameter(Mandatory = $true)][string]$SolutionUnique,
@@ -23,6 +26,13 @@ param(
 )
 $ErrorActionPreference = "Stop"
 if ($SolutionUnique -match '\s') { throw "SolutionUnique must not contain spaces (unique names are immutable). Use PascalCase." }
+
+# `pac copilot`/`pac code` with `--publisher-prefix <prefix>` create a publisher whose UNIQUE NAME is
+# the prefix and re-bind the solution to it. If our publisher uses a different unique name (e.g.
+# `<name>demo`), that pac-created publisher orphans ours. So default the publisher unique name to the
+# PREFIX -> pac finds and reuses the same publisher, no orphan.
+if (-not $PublisherUnique) { $PublisherUnique = $Prefix }
+if (-not $PublisherFriendly) { $PublisherFriendly = $SolutionFriendly }
 
 $token = az account get-access-token --resource $EnvironmentUrl --query accessToken -o tsv
 if (-not $token) { throw "No access token. Run: az login --tenant <target-tenant>" }

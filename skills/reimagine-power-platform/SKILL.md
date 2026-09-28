@@ -251,8 +251,10 @@ Build **solution-first** and keep **everything** in the one named unmanaged solu
    Derive the names from the pilot (Dataverse rules): **`Prefix`** = 2–8 **lowercase alphanumeric**
    (e.g. *Biomedical Equipment Maintenance* → `bem`); **`SolutionUnique`** = **PascalCase, no
    spaces** and immutable (`BiomedicalEquipmentMaintenance`); `SolutionFriendly` = the display name;
-   `PublisherUnique`/`PublisherFriendly` = a demo publisher (e.g. `bemdemo` / "BEM Demo"). Never leak
-   the kit's "reimagine" branding into these names.
+   **`PublisherUnique` defaults to the `Prefix`** (recommended — `pac copilot`/`pac code` create a
+   publisher named after the prefix and bind the solution to it, so matching unique names keeps ONE
+   publisher instead of orphaning a `<name>demo` one); `PublisherFriendly` defaults to `SolutionFriendly`.
+   Never leak the kit's "reimagine" branding into these names.
 2. **Tables/choices:** create with the `MSCRM.SolutionUniqueName=<solution>` header so they land in it. Use `scripts/provision-tables.ps1 -SpecFile <tables.json>` (generic: tables, columns, lookups; types include `image`/`file` and **`choice`** — give a `choice` column an `options: ["Open","In Progress","Done"]` array). Model **status/priority/category** as `choice` columns (not free text). **Recreate every source column** captured in discovery — including images/files — so the reimagined app keeps full fidelity.
 3. **Experiences:** implement custom experiences as **code apps** (never target canvas apps);
    retain or redesign approved model-driven experiences. Build the code-app UI with **Fluent UI 2**

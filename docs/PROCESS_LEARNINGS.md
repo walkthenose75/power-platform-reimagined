@@ -309,6 +309,14 @@ The machine did have the **Power Platform CLI (`pac`)**, so we adapted to the **
   stays in the target + Default), still published and editable. `scripts/build-agent.ps1` now removes
   that per-agent solution automatically after import (guarded so it can never touch the target). Spot
   it with `solutioncomponents?$filter=objectid eq <botid>` (lists every solution the agent is in).
+- **`pac copilot`/`pac code` (`--publisher-prefix <p>`) create a publisher whose UNIQUE NAME is the
+  prefix** and re-bind the solution to it. If `ensure-solution` used a different publisher unique name
+  (e.g. `<name>demo`), you end up with **two** publishers sharing the same prefix and the original is
+  **orphaned** (the solution points at the pac-created `<prefix>` publisher). Schema names stay
+  consistent (same prefix), so it's cosmetic — but untidy. Fix: `ensure-solution` now **defaults
+  `PublisherUnique` to the `Prefix`**, so pac reuses the same publisher (no orphan). Publisher
+  **unique name + prefix are immutable** after creation (only `friendlyname` is PATCH-able) — the
+  DigiTier deliverable's publisher was renamed generically via `friendlyname` only.
 
 ## Build conventions — Fluent UI 2 + models
 
