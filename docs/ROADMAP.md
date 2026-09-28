@@ -81,6 +81,90 @@ intake so they travel with the pilot. Two distinct uses:
 
 ---
 
+### Reimagine a Microsoft 365 (declarative) Copilot agent
+
+**Status:** idea · **Applies to:** a new source type — the source *is* an agent
+
+**Opportunity.** The kit reimagines *solutions* (Dataverse/SharePoint/canvas) into code apps +
+Dataverse + a Copilot Studio agent. But increasingly the **source itself is an agent**: a **Microsoft
+365 Copilot declarative agent** (a Teams app package — `manifest.json` + a declarative‑agent JSON with
+instructions, conversation starters, capabilities, knowledge, and API‑plugin actions), or a **Copilot
+Studio agent** already published to M365. Operators will want to assess and modernize these — e.g., move
+a brittle declarative agent to a governed Copilot Studio agent grounded on Dataverse, split an
+over‑scoped agent into connected agents, or rebuild it "as code" with real ALM.
+
+**Sketch.**
+- **New source adapter — read the agent.** *Declarative agent:* ingest the **Teams app package** (`.zip`)
+  / M365 agent export and parse `manifest.json` + the declarative‑agent JSON to extract **instructions**,
+  **conversation starters**, **capabilities** (WebSearch, OneDrive/SharePoint, Graph connectors, code
+  interpreter, image gen), **knowledge** (SharePoint/Graph URLs), and **actions** (API plugins / OpenAPI).
+  *Copilot Studio agent:* reuse the existing clone/pull (the `clone-agent` / `manage-agent` skills) to get
+  its YAML (topics, triggers, knowledge, actions, auth mode).
+- **Reuse the agent‑as‑code build.** The kit already authors Copilot Studio agents via `pac copilot`
+  (`scripts/build-agent.ps1`, `src/agent-build.ts`, `reimagine agent-guide`) and knows the M365 vs Copilot
+  Studio distinction (`intake.target.agents.m365Copilot`). Map extracted instructions/knowledge/actions →
+  a reimagined Copilot Studio agent (or a cleaned declarative agent), grounded on the reimagined Dataverse
+  via the Dataverse MCP tool (logical‑name instructions per AGENT_BUILD.md §8).
+- **Decisions to record.** capability→feature mapping ("OneDrive/SharePoint knowledge → `add-knowledge` on
+  the demo site"; "API plugin → connector action or MCP tool"); auth mode (integrated Entra/M365 SSO vs
+  DirectLine — the kit already splits `chat-sdk` / `chat-directline`); consolidation/split of agents.
+
+**Considerations.**
+- **Two agent models.** Declarative (M365 Copilot: manifest + instructions + capabilities, hosted by M365)
+  vs Copilot Studio (bot/YAML, generative orchestration) are different authoring models — be explicit about
+  source→target (declarative→Studio is the common modernization; note when to keep declarative).
+- **Auth + grounding.** M365 agents use integrated Entra auth; grounding on Dataverse needs the MCP tool +
+  the GA/Preview feature toggle + logical‑name instructions (AGENT_BUILD.md §8). The last mile is interactive.
+- **No customer content.** Source instructions/knowledge may carry tenant identifiers or customer data —
+  sanitize; publish only synthetic/non‑identifying instructions + demo knowledge.
+- **Testing.** Reuse `create-eval-set` / `run-eval` (in‑product Copilot Studio evaluation) to confirm the
+  reimagined agent behaves like the source on representative prompts.
+
+---
+
+### Reimagine an Azure‑hosted solution
+
+**Status:** idea · **Applies to:** a new source type — an Azure workload
+
+**Opportunity.** Many "solutions" worth reimagining live in **Azure**, not Power Platform: a web app +
+Azure SQL + Functions/Logic Apps + APIM + Service Bus, defined by **Bicep/ARM** or just a running
+**resource group**. Operators want two things: (a) **assess** the Azure architecture and (b) decide
+**where each workload belongs** — the data‑centric, forms‑and‑workflow parts often reimagine cleanly as
+**Dataverse + a code app + a Copilot Studio agent** (the kit's sweet spot), while compute‑heavy or
+specialized parts **stay on Azure**, modernized (containers, serverless, managed data).
+
+**Sketch.**
+- **New source adapter — read the Azure solution.** Two ingest modes: (1) **IaC** — parse **Bicep/ARM**
+  (or Terraform) to get the resource graph (types, SKUs, dependencies, app settings / connection strings →
+  flag as secrets); (2) **live inventory** — use the **Azure MCP tools** / ARM (`group_resource_list`,
+  `bicepschema`, `appservice`, `sql`, `functionapp`, `storage`, `cloudarchitect`, …) to read a
+  subscription/resource group **read‑only**. Emit a normalized **Azure current‑state** (compute, data,
+  integration, identity, networking) into `generated/current-state`.
+- **Target routing (the key new decision).** Classify each workload **retain‑on‑Azure (modernize)** vs
+  **move‑to‑Power‑Platform**: relational data + CRUD/forms/approvals + a user app → **Dataverse + code app
+  + agent**; a public API / heavy compute / event pipeline / ML → **stay Azure** (ACA/AKS, Functions,
+  managed Postgres/SQL, Service Bus). Produce a **coexistence architecture** (what calls what; where
+  identity + data live) rather than forcing everything into Power Platform.
+- **Reuse the pipeline for the Power‑Platform slice.** Parts routed to Power Platform flow through the
+  existing gates (schema → `provision-tables` → synthetic data → code app → agent). Azure‑retained parts get
+  a **modernized Bicep** + a deploy runbook (lean on the Azure MCP `deploy` / `azd` / `get_azure_bestpractices`
+  / `wellarchitectedframework` tools).
+
+**Considerations.**
+- **Scope + boundary.** Azure solutions are unbounded — require an explicit boundary (one resource group /
+  one app) and a retain‑vs‑move policy up front (an intent/feature‑selection decision).
+- **Secrets + identity.** App settings / connection strings / Key Vault refs are secrets — never persist
+  raw; the sanitizer must cover IaC + inventory dumps. Managed identity / Entra app registrations map to the
+  target's identity model.
+- **Synthetic data only.** Like the Power Platform path, the reimagined target uses **synthetic data**, not
+  migrated production data.
+- **Tooling already present.** The Azure MCP server (inventory, Bicep schema, cloud architect, WAF /
+  best‑practices, deploy) can do the read + target design + deploy heavy lifting; the kit orchestrates + gates it.
+- **Two flavors of "reimagine."** Be explicit: *Azure → Power Platform* (workload fit) vs *Azure → modern
+  Azure* (architecture modernization). Start with the Azure→Power‑Platform slice (closest to the kit's core).
+
+---
+
 ## Related backlog
 
 - **Mode-aware gate stages.** The `status`/gate ledger includes `discovery` + `intent` stages that
