@@ -121,6 +121,22 @@ Intake initialized. No environment mutation has been authorized.
   await writeFile(path.join(output, "KICKOFF.md"), brief, "utf8");
 }
 
+/**
+ * Ensure a minimal `intake.json` exists after a CLI `start` (the wizard writes a full one; the pure-CLI
+ * path only wrote KICKOFF.md). Downstream commands (status, preflight, agent-guide, package) all read
+ * `intake.json`, so scaffold a minimal brief when it's absent — never overwrite a wizard-provided one.
+ */
+async function ensureIntakeBrief(output: string, intake: IntakePayload): Promise<void> {
+  const intakePath = path.join(output, "intake.json");
+  try {
+    await stat(intakePath);
+    return; // already present (wizard) — leave it alone
+  } catch {
+    /* absent — scaffold below */
+  }
+  await writeFile(intakePath, `${JSON.stringify(intake, null, 2)}\n`, "utf8");
+}
+
 export async function startFromZip(options: ZipStartOptions): Promise<void> {
   const zip = path.resolve(options.zip);
   const output = path.resolve(options.output);
@@ -168,6 +184,11 @@ export async function startFromZip(options: ZipStartOptions): Promise<void> {
   };
   await initializeWorkspace(initOptions);
   await writeKickoffBrief(output, `Solution ZIP: \`${path.basename(destination)}\`\n\nSHA-256: \`${digest}\``);
+  await ensureIntakeBrief(output, {
+    pilotName: options.name,
+    entryMode: "solution-zip",
+    source: { zipPath: initOptions.zipPath ?? path.relative(output, destination).replaceAll("\\", "/"), solutionName: options.name }
+  });
   const validation = await validateWorkspace(output);
   if (!validation.valid) {
     throw new Error(`Initialized workspace failed validation:\n${validation.errors.join("\n")}`);
@@ -197,6 +218,11 @@ export async function startFromRepository(options: RepositoryStartOptions): Prom
     output,
     `Repository: \`${options.repository}\`\n\nRequested revision: \`${options.revision}\`\n\nResolved commit: \`${resolvedRevision}\``
   );
+  await ensureIntakeBrief(output, {
+    pilotName: options.name,
+    entryMode: "repository",
+    source: { repository: options.repository, revision: resolvedRevision }
+  });
   const validation = await validateWorkspace(output);
   if (!validation.valid) {
     throw new Error(`Initialized workspace failed validation:\n${validation.errors.join("\n")}`);

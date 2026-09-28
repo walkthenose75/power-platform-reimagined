@@ -58,6 +58,11 @@ test("starts from a ZIP and records source provenance", async () => {
     assert.match(await readFile(path.join(workspace, "KICKOFF.md"), "utf8"), /Current gate/);
     // A standalone zip (outside inbox/) is COPIED, never removed.
     assert.equal(await readFile(zip, "utf8"), "fictitious solution package");
+    // CLI start scaffolds a minimal intake.json so downstream commands (status/preflight/agent-guide/package) work.
+    const intake = JSON.parse(await readFile(path.join(workspace, "intake.json"), "utf8")) as { pilotName: string; entryMode: string; source?: { zipPath?: string } };
+    assert.equal(intake.pilotName, "Fabrikam Care Operations");
+    assert.equal(intake.entryMode, "solution-zip");
+    assert.equal(intake.source?.zipPath, "evidence/source/FabrikamCare.zip");
   });
 });
 
