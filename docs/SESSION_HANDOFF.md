@@ -3,6 +3,29 @@
 _Last updated: 2026‑09‑28 (session: **DigiTier — a real customer solution ZIP reimagined end‑to‑end to a live Dataverse + Fluent 2 app + agent** + 4 more kit fixes)._
 Read this first to resume with **zero drift**. It is the single source of truth for where we are.
 
+## ✅ DigiTier PUBLISHED (latest) — the reimagining is COMPLETE (all 9 gates approved)
+DigiTier is fully reimagined, deployed live, and **published** to a public GitHub repo.
+- **Public deliverable repo:** https://github.com/walkthenose75/tiered-daily-management
+  (branded generically as "Tiered Daily Management" — never the source/customer name). Ships the
+  solution export (7 `tdm_` tables + agent + app), the Fluent 2 app **source**, synthetic data +
+  loader, and all guides. Sanitizer + independent scans (text **and** inside the zip) all clean.
+- **App upgraded live** (both `pac code push`ed + re-exported into the bundle): a **New issue**
+  create form (create payload validated live) and a persisted **light/dark theme toggle** (removed
+  the leftover Vite template CSS that had forced dark).
+- **3 kit fixes this session** (pushed to master): `1e6d65b` — `package` now **ships the solution
+  export** it references + a **branding guard** (warn when the bundle name matches the source
+  solution name; agent doc prefers the generic hub title); `c5c623f` — runbook now **requires a
+  create/write-back affordance** with the live-validated create-payload rules. **84 tests** green.
+- Publisher is generic "Contoso Demo Publisher" (unique/prefix `tdm`). Gates: all 9 approved.
+
+## ▶️ NEXT SESSION options
+- **Cleanup (optional):** the Skunkworks POC tenant still holds the live demo objects — solution
+  `TieredDailyManagement` (7 `tdm_` tables + 59 rows + code app `bb5a4d3a…` + agent
+  `tdm_TierAssistant`) and `BMEEquipmentService` from the BME pilot. Delete if the tenant should be
+  reset (the public repo is self-contained — anyone can rebuild from it).
+- **Fresh run:** reimagine another solution ZIP end-to-end (the operator's plan below still applies).
+- **Optional finish:** interactive DigiTier agent grounding test (mechanism proven on BME).
+
 ## ▶️ LATEST — DigiTier pilot COMPLETE (2nd solution‑ZIP run, a real customer solution)
 Ran a real customer solution ZIP (`DigiTier_V1` — a Lean/tiered daily‑management system, publisher
 `merckdigitier`; treated source as read‑only evidence, kept all assets synthetic/non‑identifying)
@@ -17,8 +40,8 @@ through the full 9‑gate workflow to a complete deliverable on Skunkworks POC:
 - **4 more kit fixes** this real‑customer run forced out (all pushed): `bcd1c27` (start scaffolds
   intake.json), `307d41a` (provision‑tables metadata‑cache retry + token refresh before publish),
   `3663d8e` (loader lowercases logical names), and the app/agent flow re‑exercised the prior fixes.
-- Optional finish (not done): interactive agent grounding test (proven on BME); package/publish to
-  GitHub. Full detail in the session's `files/digitier-pilot-checkpoint.md`.
+- Publish: **DONE** — see the PUBLISHED banner at the top. Still optional: interactive agent
+  grounding test (proven on BME). Full detail in the session's `files/digitier-pilot-checkpoint.md`.
 
 ## ▶️ NEXT SESSION — run a FRESH solution end‑to‑end (operator's plan)
 Tomorrow: reimagine **another solution** end‑to‑end — a real **solution ZIP** through all 9 gates (the
