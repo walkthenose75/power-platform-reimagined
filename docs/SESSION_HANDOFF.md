@@ -1,7 +1,29 @@
 # Session Handoff — resume point
 
-_Last updated: 2026‑09‑25 (session: kit hardening + Inventory v2 pilot + **SharePoint bridge COMPLETE — all 3 capabilities live‑validated**)._
+_Last updated: 2026‑09‑27 (session: SharePoint bridge COMPLETE + **BME pilot: full SharePoint‑backed run end‑to‑end to a LIVE data‑grounded agent** + 4 kit fixes)._
 Read this first to resume with **zero drift**. It is the single source of truth for where we are.
+
+## ▶️ NEXT SESSION — run a FRESH solution end‑to‑end (operator's plan)
+Tomorrow: reimagine **another solution** end‑to‑end — a real **solution ZIP** through all 9 gates (the
+kit's primary path). The kit is ready + hardened. Sequence (operator brings the ZIP):
+1. `npm run doctor` → `./scripts/connect.ps1` (pac + az sign‑ins) if needed.
+2. **Intake:** `npm run reimagine -- start --name "<Pilot>" --zip <path\to\solution.zip> --output workspaces\<pilot>`
+   (creates `intake.json` + `KICKOFF.md`). Open the workspace **KICKOFF.md** in Copilot and say
+   "Reimagine this Power Platform solution." Follow the gated workflow in `skills/reimagine-power-platform/SKILL.md`.
+3. **discovery → plan → build (ensure‑solution → provision‑tables → code app → agent) → synthetic‑data →
+   grounding → acceptance → package/publish**, honoring each gate.
+
+Today's learnings apply automatically (all shipped): loader resolves **choice labels** (`633c469`);
+`build-agent.ps1` **auto‑cleans the per‑agent solution** (`89bb5a7`); the agent guide surfaces
+**knowledge grounding** (`832974a`) and the **4 MCP grounding gotchas** (`3a466ec`). When grounding the
+agent: use a connection for **this** env, match the **GA vs Preview** Dataverse‑MCP toggle in PPAC, put
+**logical names** in the instructions, and **upload** knowledge files (don't ground on a fresh
+SharePoint site). Keep `.ps1` **pure ASCII** (parse‑check with `Parser::ParseFile`). Note: `start --zip`
+*does* create `intake.json`; only `init --source new-concept` skips it (minor open gap).
+
+_Optional BME‑pilot leftovers (not blocking): re‑add its knowledge via direct upload; add a Fluent 2 code
+app; clean up throwaway tenant objects (BME lists + BME Policies + BME Demo Knowledge library on the root
+SharePoint site). Full detail in the session's `files/bme-pilot-checkpoint.md`._
 
 ## TL;DR
 
@@ -22,8 +44,15 @@ We then **built and LIVE‑VALIDATED the entire SharePoint bridge (all 3 capabil
    live‑only bug (**non‑ASCII em‑dash in a `.ps1` breaks Windows PowerShell 5.1**, which reads
    BOM‑less scripts as ANSI).
 
-- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **78 tests
+- **Kit:** https://github.com/walkthenose75/power-platform-reimagined — public, `master`, **81 tests
   green** (`npm run check`), working tree **clean and in sync with origin**.
+- **Latest pilot (this session):** **BME Equipment Service** — a **SharePoint‑backed** solution run
+  end‑to‑end: live SharePoint source (3 lists + a Policies library) → all 3 bridge capabilities →
+  3 Dataverse tables + **27 synthetic rows** (choices + lookups verified) → published **BME Demo
+  Knowledge** library → **BME Service Assistant** agent built as code + published + **grounded on
+  Dataverse (MCP) and answering correctly live** ("3 Critical work orders" with the right devices).
+  Surfaced + shipped **4 kit fixes** (`633c469` loader choice support, `832974a` agent‑guide knowledge,
+  `89bb5a7` per‑agent‑solution cleanup, `3a466ec` MCP grounding gotchas).
 - **Demos (public, importable):** `walkthenose75/virtual-rounding`, `walkthenose75/inventory-tracker-go`.
 - **Tenant:** Skunkworks POC `https://orgfd452920.crm.dynamics.com/` (env `db02e4be‑e8d1‑e733‑bbac‑10384a8f4212`,
   tenant `505fd4e7‑74f6‑4aec‑9c0e‑3ed624c84faf`), active `pac` + `az` as `admin@diax56912972.onmicrosoft.com`.
