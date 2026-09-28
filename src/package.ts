@@ -23,6 +23,7 @@ export interface PackageReport {
   publishTarget: PublishTarget;
   scanFindings: ScanFinding[];
   files: string[];
+  warnings: string[];
 }
 
 async function readJson(file: string): Promise<Record<string, unknown> | null> {
@@ -240,6 +241,30 @@ async function copyFileIfPresent(from: string, to: string): Promise<boolean> {
 }
 
 /**
+ * Copy the importable solution export(s) into the bundle. The solution README points installers at
+ * the `*.zip` under `solution/`, so an exported `<workspace>/solution/*.zip` (from `pac solution
+ * export`) must ship with the deliverable. Returns the copied zip file names (bundle-relative to
+ * `solution/`).
+ */
+async function copySolutionExports(workspace: string, outputDir: string): Promise<string[]> {
+  const solDir = path.join(workspace, "solution");
+  let entries: string[];
+  try {
+    entries = await readdir(solDir);
+  } catch {
+    return [];
+  }
+  const copied: string[] = [];
+  for (const name of entries) {
+    if (!name.toLowerCase().endsWith(".zip")) continue;
+    await mkdir(path.join(outputDir, "solution"), { recursive: true });
+    await copyFile(path.join(solDir, name), path.join(outputDir, "solution", name));
+    copied.push(name);
+  }
+  return copied;
+}
+
+/**
  * Copy the code-app source into the bundle so it's self-contained (deployable with `pac code push`).
  * Finds the app dir under `<workspace>/solution/` (the one with a `power.config.json`), copies it
  * excluding `node_modules`/`dist`/`.git`, and templatizes `power.config.json` so it carries no
@@ -309,6 +334,10 @@ export async function packagePublication(workspace: string, options: { outDir?: 
   const appDir = await copyCodeAppSource(workspace, outputDir);
   if (appDir) files.push(`${appDir}/`);
 
+  // Ship the importable solution export(s) referenced by the solution README.
+  const solutionZips = await copySolutionExports(workspace, outputDir);
+  for (const zip of solutionZips) files.push(`solution/${zip}`);
+
   await write("README.md", renderReadme(pilotName, source, manifest, { hasAgents: hasAgentsInScope, ...(appDir ? { appDir } : {}) }));
   await write("SOLUTION_HUB.md", renderHubDoc(manifest, readiness));
   await write("solution-hub.json", `${JSON.stringify(manifest, null, 2)}\n`);
@@ -338,7 +367,31 @@ export async function packagePublication(workspace: string, options: { outDir?: 
   const scanFindings = await scanPath(outputDir);
   const publishTarget = renderPublishTarget(intake as unknown as IntakePayload, ".");
 
-  return { workspace: workspace.replaceAll("\\", "/"), outputDir: outputDir.replaceAll("\\", "/"), pilotName, hub: readiness, hubManifest: manifest, publishTarget, scanFindings, files };
+  // Guard: the public bundle must not be branded with the source solution's name (often a customer
+  // product name). pilotName drives every generated doc's title, so warn if it matches the source.
+  const warnings: string[] = [];
+  const sourceSolutionName =
+    ((intake?.source as Record<string, unknown> | undefined)?.solutionName as string | undefined) ||
+    ((model?.source as Record<string, unknown> | undefined)?.solutionName as string | undefined) ||
+    "";
+  if (sourceSolutionName && pilotName.trim().toLowerCase() === sourceSolutionName.trim().toLowerCase()) {
+    warnings.push(
+      `Bundle is branded "${pilotName}", which matches the source solution name — set a generic ` +
+        `display name (solution-model assessment.name or intake publish.solutionHub.title) before publishing.`
+    );
+  }
+
+  return {
+    workspace: workspace.replaceAll("\\", "/"),
+    outputDir: outputDir.replaceAll("\\", "/"),
+    pilotName,
+    hub: readiness,
+    hubManifest: manifest,
+    publishTarget,
+    scanFindings,
+    files,
+    warnings
+  };
 }
 
 export function renderPackageReport(report: PackageReport): string {
@@ -352,6 +405,11 @@ export function renderPackageReport(report: PackageReport): string {
   lines.push(`  Present: ${report.hub.present.join(", ") || "(none)"}`);
   if (report.hub.missing.length) lines.push(`  Missing: ${report.hub.missing.join(", ")}`);
   lines.push("");
+  if (report.warnings.length) {
+    lines.push("Branding / publication warnings:");
+    for (const w of report.warnings) lines.push(`  ! ${w}`);
+    lines.push("");
+  }
   if (report.scanFindings.length) {
     lines.push(`Sanitization scan: ${report.scanFindings.length} FINDING(S) — fix before publishing:`);
     for (const f of report.scanFindings.slice(0, 10)) lines.push(`  ${f.file}:${f.line} [${f.rule}]`);

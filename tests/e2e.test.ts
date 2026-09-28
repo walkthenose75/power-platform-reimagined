@@ -126,3 +126,60 @@ test("packaged demo data is turnkey — ships the manifest + self-contained load
   assert.equal((await readFile(path.join(dataDir, "manifest.json"), "utf8")).length > 0, true);
   assert.match(await readFile(path.join(dataDir, "load-synthetic-data.ps1"), "utf8"), /EnvironmentUrl|ManifestPath/);
 });
+
+test("packaged bundle ships the exported solution zip(s) from solution/", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "reimagine-e2e-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const workspace = path.join(root, "with-solution");
+  await initializeWorkspace({ name: "With Solution", source: "new-concept", output: workspace });
+  // A solution export dropped in solution/, as `pac solution export` produces.
+  await mkdir(path.join(workspace, "solution"), { recursive: true });
+  await writeFile(path.join(workspace, "solution", "MySolution.zip"), "PK\u0003\u0004fake-solution-zip", "utf8");
+
+  const report = await packagePublication(workspace);
+  // The importable solution the README points installers at must travel with the bundle.
+  assert.ok(report.files.includes("solution/MySolution.zip"), report.files.join(", "));
+  const shipped = await readFile(path.join(workspace, "publication", "solution", "MySolution.zip"), "utf8");
+  assert.match(shipped, /fake-solution-zip/);
+});
+
+test("packaging warns when the bundle name matches the source solution name", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "reimagine-e2e-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const workspace = path.join(root, "branded");
+  // assessment.name (bundle brand) == source solution name → the public artifact would leak it.
+  await initializeWorkspace({ name: "Acme", source: "solution-zip", output: workspace, zipPath: "evidence/source/Acme.zip", sha256: sha });
+  const intake = {
+    schemaVersion: "1.0.0",
+    pilotName: "Acme",
+    entryMode: "solution-zip",
+    target: { surface: "code-app", teamsPackaging: true, uiSystem: "fluent2" },
+    source: { zipPath: "inbox/acme/Acme.zip", solutionName: "Acme", dependencyBoundary: "full-closure" }
+  };
+  await writeFile(path.join(workspace, "intake.json"), `${JSON.stringify(intake, null, 2)}\n`, "utf8");
+
+  const report = await packagePublication(workspace);
+  assert.ok(
+    report.warnings.some((w) => /matches the source solution name/i.test(w)),
+    `expected a branding warning; got: ${report.warnings.join(" | ")}`
+  );
+});
+
+test("packaging does not warn when the bundle name is a generic hub title", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "reimagine-e2e-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const workspace = path.join(root, "generic");
+  // Generic display name (assessment.name) differs from the source solution name → no warning.
+  await initializeWorkspace({ name: "Field Operations", source: "solution-zip", output: workspace, zipPath: "evidence/source/Acme.zip", sha256: sha });
+  const intake = {
+    schemaVersion: "1.0.0",
+    pilotName: "Field Operations",
+    entryMode: "solution-zip",
+    target: { surface: "code-app", teamsPackaging: true, uiSystem: "fluent2" },
+    source: { zipPath: "inbox/acme/Acme.zip", solutionName: "Acme", dependencyBoundary: "full-closure" }
+  };
+  await writeFile(path.join(workspace, "intake.json"), `${JSON.stringify(intake, null, 2)}\n`, "utf8");
+
+  const report = await packagePublication(workspace);
+  assert.deepEqual(report.warnings, []);
+});

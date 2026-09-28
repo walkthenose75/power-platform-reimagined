@@ -17,6 +17,15 @@ function agentKinds(intake: IntakePayload): { copilotStudio: boolean; m365: bool
   return { copilotStudio: Boolean(a.copilotStudio), m365: Boolean(a.m365Copilot) };
 }
 
+/**
+ * The name to brand the agent/docs with. Prefer the generic Solution Hub title over the raw
+ * pilotName, which is often the source solution's (customer) name and must not surface in a
+ * publishable artifact.
+ */
+function agentDisplayName(intake: IntakePayload): string {
+  return intake.publish?.solutionHub?.title?.trim() || intake.pilotName;
+}
+
 /** A few grounded test prompts, tailored to the grounding tables when we have them. */
 function testPrompts(intake: IntakePayload, tables: string[]): string[] {
   const prompts = ["show me the tables in Dataverse"];
@@ -25,7 +34,7 @@ function testPrompts(intake: IntakePayload, tables: string[]): string[] {
     prompts.push(`describe the ${first} table`);
     prompts.push(`how many rows are in ${first}?`);
   } else {
-    prompts.push(`how many records does ${intake.pilotName} have?`);
+    prompts.push(`how many records does ${agentDisplayName(intake)} have?`);
   }
   prompts.push("what needs attention right now?");
   return prompts;
@@ -49,7 +58,7 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   const tablesLine = tables.length ? tables.map((t) => `\`${t}\``).join(", ") : "the reimagined Dataverse tables";
 
   const lines: string[] = [];
-  lines.push(`# Agent build — ${intake.pilotName}`);
+  lines.push(`# Agent build — ${agentDisplayName(intake)}`);
   lines.push("");
   lines.push(
     "Built with the **new Copilot Studio experience** on the **GitHub Copilot harness**. The agent " +
@@ -134,7 +143,7 @@ export function renderAgentBuild(intake: IntakePayload, options: AgentBuildOptio
   lines.push("");
   lines.push("```text");
   lines.push(
-    `You are the ${intake.pilotName} assistant${industryLine}. Ground every answer in Dataverse via the ` +
+    `You are the ${agentDisplayName(intake)} assistant${industryLine}. Ground every answer in Dataverse via the ` +
       `Dataverse MCP Server over ${tablesLine}. Help users find records, report items that need attention, ` +
       `summarize by category, and take safe update actions on request. Be concise, show numbers, and ` +
       `proactively flag anything that needs action. Ask a brief clarifying question when a request is ambiguous.`
